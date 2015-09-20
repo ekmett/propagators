@@ -13,7 +13,7 @@ copyright:     Copyright (C) 2015 Edward A. Kmett
 build-type:    Custom
 tested-with:   GHC == 7.10.2
 synopsis:      The Art of the Propagator
-description:   The Art of the Propagator
+description:   <http://web.mit.edu/~axch/www/art.pdf The Art of the Propagator>
 
 extra-source-files:
   CHANGELOG.markdown
