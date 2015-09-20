@@ -9,19 +9,19 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE Unsafe #-}
+
+module Data.Propagator.Internal where
 
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Primitive
 import Control.Monad.ST
 import Data.Foldable
-import Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import Data.HashMap.Strict (HashMap)
-import Data.Primitive
 import Data.Primitive.MutVar
 import Data.Proxy
-import Data.Ratio
 import Data.Reify
 import Unsafe.Coerce
 
@@ -38,7 +38,7 @@ instance Applicative Change where
 
 instance Alternative Change where
   empty = Contradiction "empty"
-  Contradiction s <|> n = n
+  Contradiction{} <|> n = n
   m               <|> _ = m
 
 instance Monad Change where
@@ -100,8 +100,8 @@ write :: Cell s a -> a -> ST s ()
 write (Cell m r) a' = join $ atomicModifyMutVar' r $ \case
   (Nothing, ns) -> ((Just a', ns), ns a')
   old@(Just a, ns) -> case m a a' of
-    Contradiction e -> (old, fail e)
-    Change False a'' -> (old, return ())
+    Contradiction e  -> (old, fail e)
+    Change False _   -> (old, return ())
     Change True a''  -> ((Just a'', ns), ns a'')
 
 require :: Cell s a -> ST s (Maybe a)
@@ -137,7 +137,7 @@ data Tape s f a where
 
 newtype Prop s a = Prop { unProp :: Tape s (Prop s) a }
 
-mapTape :: (forall a. f a -> g a) -> Tape s f a -> Tape s g a
+mapTape :: (forall x. f x -> g x) -> Tape s f a -> Tape s g a
 mapTape _ (Nullary u) = Nullary u
 mapTape f (Unary k a) = Unary k (f a)
 mapTape f (Binary k a b) = Binary k (f a) (f b)
@@ -207,7 +207,7 @@ instance Traversable (UnsafeDerefProp s) where
 
 instance MuRef (Prop s a) where
   type DeRef (Prop s a)            = UnsafeDerefProp s
-  mapDeRef f (Prop (Nullary n))    = pure $ UnsafeDerefNullary n
+  mapDeRef _ (Prop (Nullary n))    = pure $ UnsafeDerefNullary n
   mapDeRef f (Prop (Unary k a))    = UnsafeDerefUnary Proxy k <$> f a
   mapDeRef f (Prop (Binary k a b)) = UnsafeDerefBinary Proxy k <$> f a <*> f b
 
@@ -243,9 +243,9 @@ lower :: Prop s a -> ST s (Cell s a)
 lower m = do
   Graph kvs root <- unsafePrimToPrim (reifyGraph m)
   kvs' <- traverse (_2 buildACell) kvs
-  let m = HM.fromList kvs'
-  traverse_ (linkACell m) kvs
-  case m HM.! root of
+  let hm = HM.fromList kvs'
+  traverse_ (linkACell hm) kvs
+  case hm HM.! root of
     ACell a -> return (unsafeCoerce a)
 
 arg :: Cell s a -> Prop s a
@@ -271,5 +271,5 @@ backward f b = runST $ do
   write y b
   require x
 
-toFahrenheit :: (Eq a, Fractional a, Merging a) => Prop s a -> Prop s a
-toFahrenheit c = c / fromRational (5%9) + 32
+-- toFahrenheit :: (Eq a, Fractional a, Merging a) => Prop s a -> Prop s a
+-- toFahrenheit c = c / fromRational (5%9) + 32

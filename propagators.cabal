@@ -1,0 +1,82 @@
+name:          propagators
+category:      Data
+version:       0
+license:       BSD3
+cabal-version: >= 1.22
+license-file:  LICENSE
+author:        Edward A. Kmett
+maintainer:    Edward A. Kmett <ekmett@gmail.com>
+stability:     experimental
+homepage:      http://github.com/ekmett/propagators/
+bug-reports:   http://github.com/ekmett/propagators/issues
+copyright:     Copyright (C) 2015 Edward A. Kmett
+build-type:    Custom
+tested-with:   GHC == 7.10.2
+synopsis:      The Art of the Propagator
+description:   The Art of the Propagator
+
+extra-source-files:
+  CHANGELOG.markdown
+  README.markdown
+
+source-repository head
+  type: git
+  location: git://github.com/ekmett/propagators.git
+
+-- You can disable the doctests test suite with -f-test-doctests
+flag test-doctests
+  default: True
+  manual: True
+
+-- You can disable the doctests test suite with -f-test-doctests
+flag test-hlint
+  default: True
+  manual: True
+
+library
+  build-depends:
+    base >= 4.8 && < 5,
+    data-reify,
+    ghc-prim,
+    primitive,
+    unordered-containers
+
+  exposed-modules:
+    Data.Propagator
+    Data.Propagator.Internal
+
+  ghc-options: -Wall -fwarn-tabs
+
+  hs-source-dirs: src
+  default-language: Haskell2010
+
+test-suite doctests
+  type:           exitcode-stdio-1.0
+  main-is:        doctests.hs
+  ghc-options:    -Wall -threaded
+  hs-source-dirs: tests
+  default-language: Haskell2010
+
+  if !flag(test-doctests)
+    buildable: False
+  else
+    build-depends:
+      base >= 4.8,
+      directory      >= 1.0,
+      doctest        >= 0.9.1,
+      filepath,
+      parallel
+
+test-suite hlint
+  type: exitcode-stdio-1.0
+  main-is: hlint.hs
+  ghc-options: -w -threaded -rtsopts -with-rtsopts=-N
+  hs-source-dirs: tests
+  default-language: Haskell2010
+
+  if !flag(test-hlint)
+    buildable: False
+  else
+    build-depends:
+      base,
+      hlint >= 1.7
