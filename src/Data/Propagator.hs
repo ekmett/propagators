@@ -1,5 +1,5 @@
 module Data.Propagator
-  ( Cell(..)
+  ( Cell
   , Change(..)
   , Propagated(..)
   , PropagatedNum(..)
@@ -10,10 +10,7 @@ module Data.Propagator
   , watch
   , watch2
   , lift1, lift2
-  , Prop
-  , nullary
-  , unary
-  , binary
+  , Prop(..)
   , lower, arg
   , lower1, lower2
   , forwards
@@ -23,4 +20,4 @@ module Data.Propagator
 import Data.Propagator.Cell
 import Data.Propagator.Class
 import Data.Propagator.Num
-import Data.Propagator.Unsafe
+import Data.Propagator.Prop

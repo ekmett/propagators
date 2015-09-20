@@ -15,6 +15,14 @@ import Control.Applicative
 import Control.Monad
 import Numeric.Natural
 
+-- | This represents the sorts of changes we can make as we accumulate information
+-- in a 'Data.Propagator.Cell.Cell'.
+--
+-- * 'Change' 'False' indicates that this is the old value, and we didn't change anything.
+--
+-- * 'Change' 'True' indicates that this is the new value, which gains information over the old.
+--
+-- * 'Contradiction' indicates that the updated information is inconsistent with the old.
 data Change a 
   = Change !Bool a
   | Contradiction String
@@ -43,30 +51,41 @@ instance MonadPlus Change where
   mzero = empty
   mplus = (<|>)
   
+-- | This is a viable default definition for 'merge' for most simple values.
 mergeDefault :: (Eq a, Show a) => a -> a -> Change a
 mergeDefault a b
   | a == b    = Change False a
   | otherwise = Contradiction $ (showString "merge: " . showsPrec 10 a . showString " /= " . showsPrec 10 b) ""
 
+-- | This class provides the default definition for how to 'merge' values in our information lattice.
 class Propagated a where
   merge :: a -> a -> Change a
   default merge :: (Eq a, Show a) => a -> a -> Change a
   merge = mergeDefault
 
+instance Propagated ()
+instance Propagated Bool
 instance Propagated Int
 instance Propagated Integer
 instance Propagated Word
 instance Propagated Rational
 instance Propagated Natural
-instance Propagated Float where -- pretty brittle!
+
+-- | Approximate equality (1e-6)
+instance Propagated Float where
   merge a b
-    | abs (a-b) < 1e-5 = Change False a
+    | isNaN a && isNaN b                     = Change False a
+    | isInfinite a && isInfinite b && a == b = Change False a
+    | abs (a-b) < 1e-6                       = Change False a
     | otherwise = Contradiction $ (showString "merge: " . showsPrec 10 a . showString " /= " . showsPrec 10 b) ""
+
+-- | Approximate equality (1e-9)
 instance Propagated Double where
   merge a b
-    | abs (a-b) < 1e-8 = Change False a
+    | isNaN a && isNaN b                     = Change False a
+    | isInfinite a && isInfinite b && a == b = Change False a
+    | abs (a-b) < 1e-9                       = Change False a
     | otherwise = Contradiction $ (showString "merge: " . showsPrec 10 a . showString " /= " . showsPrec 10 b) ""
-  -- pretty brittle!
 
 instance (Propagated a, Propagated b) => Propagated (a, b) where
   merge (a,b) (c,d) = (,) <$> merge a c <*> merge b d
