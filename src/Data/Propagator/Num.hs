@@ -179,6 +179,12 @@ instance (PropagatedInterval a, RealFloat a) => PropagatedFloating (Interval a) 
     lift1 exp x y
     lift1 log y x
 
+  csqrt x y = do
+    write x (0...infinity)
+    write y (0...infinity)
+    lift1 sqrt x y
+    lift1 (\a -> a*a) y x
+
   csin x y = do
     write y (-1...1)
     lift1 sin x y
