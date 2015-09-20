@@ -13,6 +13,7 @@ module Data.Propagator.Class
 
 import Control.Applicative
 import Control.Monad
+import Numeric.Natural
 
 data Change a 
   = Change !Bool a
@@ -55,9 +56,10 @@ class Propagated a where
 instance Propagated Int
 instance Propagated Integer
 instance Propagated Word
-instance Propagated Double
 instance Propagated Rational
-instance Propagated Float
+instance Propagated Natural
+instance Propagated Float -- pretty brittle!
+instance Propagated Double -- pretty brittle!
 
 instance (Propagated a, Propagated b) => Propagated (a, b) where
   merge (a,b) (c,d) = (,) <$> merge a c <*> merge b d

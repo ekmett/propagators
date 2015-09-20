@@ -11,7 +11,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Unsafe #-}
 
-module Data.Propagator.Internal where
+module Data.Propagator.Prop where
 
 import Control.Monad
 import Control.Monad.Primitive
@@ -21,6 +21,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.HashMap.Strict (HashMap)
 import Data.Propagator.Class
 import Data.Propagator.Cell
+import Data.Propagator.Num
 import Data.Proxy
 import Data.Reify
 import Unsafe.Coerce
@@ -48,35 +49,21 @@ unary f a = Prop (Unary f a)
 nullary :: ST s (Cell s a) -> Prop s a
 nullary m = Prop (Nullary m)
 
-instance (Propagated a, Eq a, Num a) => Num (Prop s a) where
-  (+) = binary $ \x y z -> do
-    lift2 (+) x y z
-    lift2 (-) z x y
-    lift2 (-) z y x
-  (-) = binary $ \z x y -> do
-    lift2 (+) x y z
-    lift2 (-) z x y
-    lift2 (-) z y x
-  -- TODO: this needs knowledge of if we're fractional or not to do a better job
-  (*) = binary $ \x y z -> do
-    lift2 (*) x y z
-    watch z $ \c -> if c == 0
-      then watch x $ \ a -> when (a /= 0) $ write y 0
-      else watch y $ \ b -> when (b /= 0) $ write x 0
-  negate = unary $ \x y -> lift1 negate x y >> lift1 negate y x
+instance (PropagatedNum a, Eq a, Num a) => Num (Prop s a) where
+  (+) = binary plus
+  (-) = binary $ \z x y -> plus x y z
+  (*) = binary times
+  negate = unary $ \x y -> do
+    lift1 negate x y
+    lift1 negate y x
   signum = unary $ \x y -> do
     lift1 signum x y 
     watch y $ \b -> when (b == 0) $ write x 0
-  abs = unary $ \x y -> do
-    lift1 abs x y
-    watch y $ \b -> when (b == 0) $ write x 0
+  abs = unary cabs
   fromInteger i = nullary (known $ fromInteger i)
 
-instance (Propagated a, Eq a, Fractional a) => Fractional (Prop s a) where
-  (/) = binary $ \x y z -> do
-    watch2 x y $ \ a b -> when (b /= 0) $ write z (a / b)
-    watch2 x z $ \ a c -> when (c /= 0) $ write y (a / c)
-    watch2 y z $ \ b c -> write x (b * c)
+instance (PropagatedNum a, Eq a, Fractional a) => Fractional (Prop s a) where
+  (/) = binary $ \x y z -> times z y x
   recip = unary $ \x y -> do
     watch x $ \ a -> when (a /= 0) $ write y (recip a)
     watch y $ \ b -> when (b /= 0) $ write x (recip b)

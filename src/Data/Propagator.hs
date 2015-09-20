@@ -2,6 +2,7 @@ module Data.Propagator
   ( Cell(..)
   , Change(..)
   , Propagated(..)
+  , PropagatedNum(..)
   , cell
   , cellWith
   , known
@@ -21,4 +22,5 @@ module Data.Propagator
 
 import Data.Propagator.Cell
 import Data.Propagator.Class
-import Data.Propagator.Internal
+import Data.Propagator.Num
+import Data.Propagator.Prop

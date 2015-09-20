@@ -39,6 +39,11 @@ write (Cell m r) a' = join $ atomicModifyMutVar' r $ \case
     Change False _   -> (old, return ())
     Change True a''  -> ((Just a'', ns), ns a'')
 
+unify :: Cell s a -> Cell s a -> ST s ()
+unify x y = do
+  watch x (write y)
+  watch y (write x)
+
 require :: Cell s a -> ST s (Maybe a)
 require (Cell _ c) = fst <$> readMutVar c
 
