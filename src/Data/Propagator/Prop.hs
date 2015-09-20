@@ -65,56 +65,38 @@ instance (PropagatedNum a, Eq a, Fractional a) => Fractional (Prop s a) where
   fromRational r = Nullary (known $ fromRational r)
 
 -- | most of these only spit out the primary branch when run backwards
-instance (PropagatedNum a, Eq a, Floating a) => Floating (Prop s a) where
+instance (PropagatedFloating a, Eq a, Floating a) => Floating (Prop s a) where
   pi = Nullary (known pi)
+
   exp = Unary $ \x y -> do
     lift1 exp x y
     lift1 log y x
+
   log = Unary $ \x y -> do
     lift1 log x y
     lift1 exp y x
+
   sqrt = Unary $ \x y -> do
     lift1 sqrt x y
     lift1 (\a -> a*a) y x -- or negative
     -- watch y $ \b -> when (b == 0) $ write x 0 -- right but uninformative
+
   x ** y = exp (x * log y)
+
   logBase a b = log a / log b
-  sin = Unary $ \x y -> do
-    lift1 sin x y
-    lift1 asin y x
-  cos = Unary $ \x y -> do
-    lift1 cos x y
-    lift1 acos y x
-  tan = Unary $ \x y -> do
-    lift1 tan x y
-    lift1 atan y x
-  asin = Unary $ \x y -> do
-    lift1 asin x y
-    lift1 sin y x
-  acos = Unary $ \x y -> do
-    lift1 acos x y
-    lift1 cos y x
-  atan = Unary $ \x y -> do
-    lift1 atan x y
-    lift1 tan y x
-  sinh = Unary $ \x y -> do
-    lift1 sinh x y
-    lift1 asinh y x
-  cosh = Unary $ \x y -> do
-    lift1 cosh x y
-    lift1 acosh y x
-  tanh = Unary $ \x y -> do
-    lift1 tanh x y
-    lift1 atanh y x
-  asinh = Unary $ \x y -> do
-    lift1 asinh x y
-    lift1 sinh y x
-  acosh = Unary $ \x y -> do
-    lift1 acosh x y
-    lift1 cosh y x
-  atanh = Unary $ \x y -> do
-    lift1 atanh x y
-    lift1 tanh y x
+
+  sin = Unary csin
+  cos = Unary ccos
+  tan = Unary ctan
+  asin = Unary casin
+  acos = Unary cacos
+  atan = Unary catan
+  sinh = Unary csinh
+  cosh = Unary ccosh
+  tanh = Unary ctanh
+  asinh = Unary casinh
+  acosh = Unary cacosh
+  atanh = Unary catanh
 
 data DerefProp s u where
   DerefNullary :: ST s (Cell s a) -> DerefProp s u
