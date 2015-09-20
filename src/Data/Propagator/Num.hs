@@ -15,7 +15,7 @@ class Propagated a => PropagatedNum a where
   plus x y z = do
     lift2 (+) x y z
     lift2 (-) z x y
-    lift2 (-) z y z
+    lift2 (-) z y x
 
   times :: Cell s a -> Cell s a -> Cell s a -> ST s ()
   default times :: Num a => Cell s a -> Cell s a -> Cell s a -> ST s ()
