@@ -11,7 +11,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Unsafe #-}
 
-module Data.Propagator.Prop where
+module Data.Propagator.Prop.Internal where
 
 import Control.Monad
 import Control.Monad.Primitive

@@ -23,4 +23,4 @@ module Data.Propagator
 import Data.Propagator.Cell
 import Data.Propagator.Class
 import Data.Propagator.Num
-import Data.Propagator.Prop
+import Data.Propagator.Prop.Internal
