@@ -84,6 +84,18 @@ instance PropagatedNum Float where
   times = timesFractional
 
 class PropagatedNum a => PropagatedFloating a where
+  cexp :: Cell s a -> Cell s a -> ST s ()
+  default cexp :: Floating a => Cell s a -> Cell s a -> ST s ()
+  cexp x y = do
+    lift1 exp x y
+    lift1 log y x
+
+  csqrt :: Cell s a -> Cell s a -> ST s ()
+  default csqrt :: Floating a => Cell s a -> Cell s a -> ST s ()
+  csqrt x y = do
+    lift1 sqrt x y
+    lift1 (\a -> a*a) y x
+
   csin :: Cell s a -> Cell s a -> ST s ()
   default csin :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
   csin x y = do
@@ -103,30 +115,6 @@ class PropagatedNum a => PropagatedFloating a where
   ctan :: Cell s a -> Cell s a -> ST s ()
   default ctan :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
   ctan x y = do
-    lift1 tan x y
-    watch y $ \b -> do
-      unless (abs b <= pi/2) $ fail "output of tan not between -pi/2 and pi/2"
-      write x (atan b)
-
-  casin :: Cell s a -> Cell s a -> ST s ()
-  default casin :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
-  casin y x = do
-    lift1 sin x y
-    watch y $ \b -> do
-       unless (abs b <= 1) $ fail "input to asin not between -1 and 1"
-       write x (asin b)
-
-  cacos :: Cell s a -> Cell s a -> ST s ()
-  default cacos :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
-  cacos y x = do
-    lift1 cos x y
-    watch y $ \b -> do
-       unless (abs b <= 1) $ fail "input to acos not between -1 and 1"
-       write x (acos b)
-
-  catan :: Cell s a -> Cell s a -> ST s ()
-  default catan :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
-  catan y x = do
     lift1 tan x y
     watch y $ \b -> do
       unless (abs b <= pi/2) $ fail "output of tan not between -pi/2 and pi/2"
@@ -154,31 +142,8 @@ class PropagatedNum a => PropagatedFloating a where
       unless (abs b <= 1) $ fail "output of tanh not between -1 and 1"
       write x (tanh b)
 
-  casinh :: Cell s a -> Cell s a -> ST s ()
-  default casinh :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
-  casinh x y = do
-    lift1 asinh x y
-    lift1 sinh y x
-
-  cacosh :: Cell s a -> Cell s a -> ST s ()
-  default cacosh :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
-  cacosh y x = do
-    lift1 cosh x y
-    watch y $ \b -> do
-      unless (b >= 1) $ fail "input of acosh not >= 1"
-      lift1 acosh y x
-
-  catanh :: Cell s a -> Cell s a -> ST s ()
-  default catanh :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
-  catanh y x = do
-    lift1 tanh x y
-    watch y $ \b -> do
-      unless (abs b <= 1) $ fail "input of atanh not between -1 and 1"
-      write x (tanh b)
-
 instance PropagatedFloating Float
 instance PropagatedFloating Double
-
 
 -- Interval arithmetic
 
@@ -208,3 +173,37 @@ instance PropagatedInterval a => PropagatedNum (Interval a) where
       I a b | a < 1 && b > -1 -> write x $ I (if a <= -1 then -infinity else 0) (if b >= 1 then infinity else 0)
       _ -> write x Empty
 
+instance (PropagatedInterval a, RealFloat a) => PropagatedFloating (Interval a) where
+  cexp x y = do
+    write y (0...infinity)
+    lift1 exp x y
+    lift1 log y x
+
+  csin x y = do
+    write y (-1...1)
+    lift1 sin x y
+    lift1 asin y x
+
+  ccos x y = do
+    write y (-1...1)
+    lift1 cos x y
+    lift1 acos y x
+
+  ctan x y = do
+    write y (-pi/2...pi/2)
+    lift1 tan x y
+    lift1 atan y x
+
+  csinh x y = do
+    lift1 sinh x y
+    lift1 asinh y x
+
+  ccosh x y = do
+    write y (1...infinity)
+    lift1 cosh x y
+    lift1 acosh y x
+
+  ctanh x y = do
+    write y (-1...1)
+    lift1 tanh x y
+    lift1 atanh y x

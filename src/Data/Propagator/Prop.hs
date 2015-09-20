@@ -65,18 +65,10 @@ instance (PropagatedNum a, Eq a, Fractional a) => Fractional (Prop s a) where
 instance (PropagatedFloating a, Eq a, Floating a) => Floating (Prop s a) where
   pi = Nullary (known pi)
 
-  exp = Unary $ \x y -> do
-    lift1 exp x y
-    lift1 log y x
+  exp = Unary cexp
+  log = Unary (flip cexp)
 
-  log = Unary $ \x y -> do
-    lift1 log x y
-    lift1 exp y x
-
-  sqrt = Unary $ \x y -> do
-    lift1 sqrt x y
-    lift1 (\a -> a*a) y x -- or negative
-    -- watch y $ \b -> when (b == 0) $ write x 0 -- right but uninformative
+  sqrt = Unary csqrt
 
   x ** y = exp (x * log y)
 
@@ -85,15 +77,18 @@ instance (PropagatedFloating a, Eq a, Floating a) => Floating (Prop s a) where
   sin = Unary csin
   cos = Unary ccos
   tan = Unary ctan
-  asin = Unary casin
-  acos = Unary cacos
-  atan = Unary catan
+
+  asin = Unary (flip csin)
+  acos = Unary (flip ccos)
+  atan = Unary (flip ctan)
+
   sinh = Unary csinh
   cosh = Unary ccosh
   tanh = Unary ctanh
-  asinh = Unary casinh
-  acosh = Unary cacosh
-  atanh = Unary catanh
+
+  asinh = Unary (flip csinh)
+  acosh = Unary (flip ccosh)
+  atanh = Unary (flip ctanh)
 
 data DerefProp s u where
   DerefNullary :: ST s (Cell s a) -> DerefProp s u
