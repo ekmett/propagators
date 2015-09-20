@@ -1,7 +1,7 @@
 module Data.Propagator
   ( Cell(..)
   , Change(..)
-  , Merging(..)
+  , Propagated(..)
   , cell
   , cellWith
   , known
@@ -19,4 +19,6 @@ module Data.Propagator
   , backward
   ) where
 
+import Data.Propagator.Cell
+import Data.Propagator.Class
 import Data.Propagator.Internal

@@ -43,6 +43,8 @@ library
 
   exposed-modules:
     Data.Propagator
+    Data.Propagator.Class
+    Data.Propagator.Cell
     Data.Propagator.Internal
 
   ghc-options: -Wall -fwarn-tabs
