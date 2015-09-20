@@ -16,8 +16,8 @@ module Data.Propagator
   , binary
   , lower, arg
   , lower1, lower2
-  , forward
-  , backward
+  , forwards
+  , backwards
   ) where
 
 import Data.Propagator.Cell

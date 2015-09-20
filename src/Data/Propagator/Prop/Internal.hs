@@ -141,15 +141,15 @@ lower1 f a = lower (f (arg a))
 lower2 :: (Prop s a -> Prop s b -> Prop s c) -> Cell s a -> Cell s b -> ST s (Cell s c)
 lower2 f a b = lower (f (arg a) (arg b))
 
-forward :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> a -> Maybe b
-forward f a = runST $ do
+forwards :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> a -> Maybe b
+forwards f a = runST $ do
   x <- cell
   y <- lower1 f x
   write x a
   require y
 
-backward :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> b -> Maybe a
-backward f b = runST $ do
+backwards :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> b -> Maybe a
+backwards f b = runST $ do
   x <- cell
   y <- lower1 f x
   write y b
