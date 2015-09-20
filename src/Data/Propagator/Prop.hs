@@ -64,9 +64,9 @@ instance (PropagatedNum a, Eq a, Num a) => Num (Prop s a) where
 
 instance (PropagatedNum a, Eq a, Fractional a) => Fractional (Prop s a) where
   (/) = binary $ \x y z -> times z y x
-  recip = unary $ \x y -> do
-    watch x $ \ a -> when (a /= 0) $ write y (recip a)
-    watch y $ \ b -> when (b /= 0) $ write x (recip b)
+  recip = unary $ \ x y -> do
+     z <- known 1
+     times x y z
   fromRational r = nullary (known $ fromRational r)
   
 data UnsafeDerefProp s u where

@@ -14,9 +14,9 @@ import Data.Primitive.MutVar
 import Data.Propagator.Class
 
 -- TODO: use a real mutable hash table
-data Cell s a = Cell 
+data Cell s a = Cell
   (a -> a -> Change a)
-  {-# UNPACK #-} !(MutVar s (Maybe a, a -> ST s ())) 
+  {-# UNPACK #-} !(MutVar s (Maybe a, a -> ST s ()))
 
 instance Eq (Cell s a) where
   Cell _ ra == Cell _ rb = ra == rb
@@ -27,9 +27,9 @@ cell = cellWith merge
 cellWith :: (a -> a -> Change a) -> ST s (Cell s a)
 cellWith mrg = Cell mrg <$> newMutVar (Nothing, \_ -> return ())
 
--- this will never, ever change
 known :: Propagated a => a -> ST s (Cell s a)
 known a = Cell merge <$> newMutVar (Just a, \_ -> return ())
+-- known a = do x <- cell; write x a
 
 write :: Cell s a -> a -> ST s ()
 write (Cell m r) a' = join $ atomicModifyMutVar' r $ \case
