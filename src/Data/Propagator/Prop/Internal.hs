@@ -26,7 +26,7 @@ import Data.Proxy
 import Data.Reify
 import Unsafe.Coerce
 
--- propagators via observable sharing 
+-- propagators via observable sharing
 
 data Tape s f a where
   Nullary :: ST s (Cell s a) -> Tape s f a
@@ -57,7 +57,7 @@ instance (PropagatedNum a, Eq a, Num a) => Num (Prop s a) where
     lift1 negate x y
     lift1 negate y x
   signum = unary $ \x y -> do
-    lift1 signum x y 
+    lift1 signum x y
     watch y $ \b -> when (b == 0) $ write x 0
   abs = unary cabs
   fromInteger i = nullary (known $ fromInteger i)
@@ -68,7 +68,59 @@ instance (PropagatedNum a, Eq a, Fractional a) => Fractional (Prop s a) where
      z <- known 1
      times x y z
   fromRational r = nullary (known $ fromRational r)
-  
+
+-- | most of these only spit out the primary branch when run backwards
+instance (PropagatedNum a, Eq a, Floating a) => Floating (Prop s a) where
+  pi = nullary (known pi)
+  exp = unary $ \x y -> do
+    lift1 exp x y
+    lift1 log y x
+  log = unary $ \x y -> do
+    lift1 log x y
+    lift1 exp y x
+  sqrt = unary $ \x y -> do
+    lift1 sqrt x y
+    lift1 (\a -> a*a) y x -- or negative
+    -- watch y $ \b -> when (b == 0) $ write x 0 -- right but uninformative
+  x ** y = exp (x * log y)
+  logBase a b = log a / log b
+  sin = unary $ \x y -> do
+    lift1 sin x y
+    lift1 asin y x
+  cos = unary $ \x y -> do
+    lift1 cos x y
+    lift1 acos y x
+  tan = unary $ \x y -> do
+    lift1 tan x y
+    lift1 atan y x
+  asin = unary $ \x y -> do
+    lift1 asin x y
+    lift1 sin y x
+  acos = unary $ \x y -> do
+    lift1 acos x y
+    lift1 cos y x
+  atan = unary $ \x y -> do
+    lift1 atan x y
+    lift1 tan y x
+  sinh = unary $ \x y -> do
+    lift1 sinh x y
+    lift1 asinh y x
+  cosh = unary $ \x y -> do
+    lift1 cosh x y
+    lift1 acosh y x
+  tanh = unary $ \x y -> do
+    lift1 tanh x y
+    lift1 atanh y x
+  asinh = unary $ \x y -> do
+    lift1 asinh x y
+    lift1 sinh y x
+  acosh = unary $ \x y -> do
+    lift1 acosh x y
+    lift1 cosh y x
+  atanh = unary $ \x y -> do
+    lift1 atanh x y
+    lift1 tanh y x
+
 data UnsafeDerefProp s u where
   UnsafeDerefNullary :: ST s (Cell s a) -> UnsafeDerefProp s u
   UnsafeDerefUnary   :: Propagated b => Proxy b -> (Cell s a -> Cell s b -> ST s ()) -> u -> UnsafeDerefProp s u
@@ -96,17 +148,17 @@ instance MuRef (Prop s a) where
   mapDeRef f (Prop (Binary k a b)) = UnsafeDerefBinary Proxy k <$> f a <*> f b
 
 data ACell s where
-  ACell :: Cell s a -> ACell s 
+  ACell :: Cell s a -> ACell s
 
 buildACell :: forall s. UnsafeDerefProp s Int -> ST s (ACell s)
 buildACell (UnsafeDerefNullary u) = do
-  x <- u 
+  x <- u
   return (ACell x)
 buildACell (UnsafeDerefUnary (Proxy :: Proxy b) _ _) = do
-  (x :: Cell s b) <- cell 
+  (x :: Cell s b) <- cell
   return (ACell x)
 buildACell (UnsafeDerefBinary (Proxy :: Proxy c) _ _ _) = do
-  (x :: Cell s c) <- cell 
+  (x :: Cell s c) <- cell
   return (ACell x)
 
 linkACell :: HashMap Int (ACell s) -> (Int, UnsafeDerefProp s Int) -> ST s ()

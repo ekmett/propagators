@@ -58,8 +58,15 @@ instance Propagated Integer
 instance Propagated Word
 instance Propagated Rational
 instance Propagated Natural
-instance Propagated Float -- pretty brittle!
-instance Propagated Double -- pretty brittle!
+instance Propagated Float where -- pretty brittle!
+  merge a b
+    | abs (a-b) < 1e-5 = Change False a
+    | otherwise = Contradiction $ (showString "merge: " . showsPrec 10 a . showString " /= " . showsPrec 10 b) ""
+instance Propagated Double where
+  merge a b
+    | abs (a-b) < 1e-8 = Change False a
+    | otherwise = Contradiction $ (showString "merge: " . showsPrec 10 a . showString " /= " . showsPrec 10 b) ""
+  -- pretty brittle!
 
 instance (Propagated a, Propagated b) => Propagated (a, b) where
   merge (a,b) (c,d) = (,) <$> merge a c <*> merge b d
