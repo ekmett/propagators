@@ -2,7 +2,8 @@ module Data.Propagator
   ( Cell
   , Change(..)
   , Propagated(..)
-  , PropagatedNum(..)
+  , PropagatedNum
+  , PropagatedFloating
   , cell
   , cellWith
   , known
