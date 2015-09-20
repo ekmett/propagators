@@ -42,9 +42,9 @@ data Prop s a where
   Binary  :: Propagated c => (Cell s a -> Cell s b -> Cell s c -> ST s ()) -> Prop s a -> Prop s b -> Prop s c
 
 instance (PropagatedNum a, Eq a, Num a) => Num (Prop s a) where
-  (+) = Binary plus
-  (-) = Binary $ \z x y -> plus x y z
-  (*) = Binary times
+  (+) = Binary cplus
+  (-) = Binary $ \z x y -> cplus x y z
+  (*) = Binary ctimes
   negate = Unary $ \x y -> do
     lift1 negate x y
     lift1 negate y x
@@ -55,10 +55,10 @@ instance (PropagatedNum a, Eq a, Num a) => Num (Prop s a) where
   fromInteger i = Nullary (known $ fromInteger i)
 
 instance (PropagatedNum a, Eq a, Fractional a) => Fractional (Prop s a) where
-  (/) = Binary $ \x y z -> times z y x
+  (/) = Binary $ \x y z -> ctimes z y x
   recip = Unary $ \ x y -> do
      z <- known 1
-     times x y z
+     ctimes x y z
   fromRational r = Nullary (known $ fromRational r)
 
 -- | most of these only spit out the primary branch when run backwards

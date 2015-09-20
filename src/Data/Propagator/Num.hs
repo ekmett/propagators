@@ -12,16 +12,16 @@ import Numeric.Natural
 import Numeric.Interval.Internal
 
 class Propagated a => PropagatedNum a where
-  plus :: Cell s a -> Cell s a -> Cell s a -> ST s ()
-  default plus :: Num a => Cell s a -> Cell s a -> Cell s a -> ST s ()
-  plus x y z = do
+  cplus :: Cell s a -> Cell s a -> Cell s a -> ST s ()
+  default cplus :: Num a => Cell s a -> Cell s a -> Cell s a -> ST s ()
+  cplus x y z = do
     lift2 (+) x y z
     lift2 (-) z x y
     lift2 (-) z y x
 
-  times :: Cell s a -> Cell s a -> Cell s a -> ST s ()
-  default times :: Num a => Cell s a -> Cell s a -> Cell s a -> ST s ()
-  times = lift2 (*)
+  ctimes :: Cell s a -> Cell s a -> Cell s a -> ST s ()
+  default ctimes :: Num a => Cell s a -> Cell s a -> Cell s a -> ST s ()
+  ctimes = lift2 (*)
 
   cabs :: Cell s a -> Cell s a -> ST s ()
   default cabs :: (Num a, Eq a) => Cell s a -> Cell s a -> ST s ()
@@ -36,14 +36,14 @@ class Propagated a => PropagatedNum a where
     watch y $ \b -> when (b == 0) $ write x 0
 
 instance PropagatedNum Integer where
-  times x y z = do
+  ctimes x y z = do
     lift2 (*) x y z
     watch z $ \c -> if c == 0
       then watch x $ \ a -> when (a /= 0) $ write y 0
       else watch y $ \ b -> when (b /= 0) $ write x 0
 
 instance PropagatedNum Natural where
-  times x y z = do
+  ctimes x y z = do
     lift2 (*) x y z
     watch z $ \c -> if c == 0
       then watch x $ \ a -> when (a /= 0) $ write y 0
@@ -56,8 +56,8 @@ instance PropagatedNum Word where
   cabs = unify
 
 
-timesFractional :: (Eq a, Fractional a) => Cell s a -> Cell s a -> Cell s a -> ST s ()
-timesFractional x y z = do
+ctimesFractional :: (Eq a, Fractional a) => Cell s a -> Cell s a -> Cell s a -> ST s ()
+ctimesFractional x y z = do
   watch x $ \a ->
     if a == 0
     then write z 0
@@ -75,13 +75,13 @@ timesFractional x y z = do
     with y $ \b -> when (b /= 0) $ write x (c/b)
 
 instance PropagatedNum Rational where
-  times = timesFractional
+  ctimes = ctimesFractional
 
 instance PropagatedNum Double where
-  times = timesFractional
+  ctimes = ctimesFractional
 
 instance PropagatedNum Float where
-  times = timesFractional
+  ctimes = ctimesFractional
 
 class PropagatedNum a => PropagatedFloating a where
   cexp :: Cell s a -> Cell s a -> ST s ()
@@ -157,7 +157,7 @@ instance PropagatedInterval Float where
   infinity = 1/0
 
 instance PropagatedInterval a => PropagatedNum (Interval a) where
-  times = timesFractional
+  ctimes = ctimesFractional
 
   cabs x y = do
     write y (0...infinity)
