@@ -1,10 +1,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 import Control.Applicative
 import Control.Monad
@@ -14,7 +15,6 @@ import Data.Foldable
 import Data.Primitive
 import Data.Primitive.MutVar
 import Data.Reify
--- import System.Mem.StableName.Map
 
 data Change a 
   = Change !Bool a
@@ -115,7 +115,6 @@ lift2 f x y z = do
 
 -- propagators via observable sharing 
 
-
 data Tape f a where
   Nullary :: (forall s. ST s (Cell s a)) -> Tape f a
   Unary   :: Merging b => (forall s. Cell s a -> Cell s b -> ST s ()) -> f a -> Tape f b
@@ -160,21 +159,14 @@ instance (Merging a, Eq a, Num a) => Num (Prop a) where
     watch y $ \b -> when (b == 0) $ write x 0
   fromInteger i = nullary (known $ fromInteger i)
 
-{-
 data UnsafeDerefProp u where
   UnsafeDerefNullary :: (forall s. ST s (Cell s a)) -> UnsafeDerefProp u
   UnsafeDerefUnary   :: Merging b => (forall s. Cell s a -> Cell s b -> ST s ()) -> u -> UnsafeDerefProp u
   UnsafeDerefBinary  :: Merging c => (forall s. Cell s a -> Cell s b -> Cell s c -> ST s ()) -> u -> u -> UnsafeDerefProp u
 
 instance MuRef (Prop a) where
-  type DeRef (Prop a)       = DerefProp a
-  mapDeRef f (Nullary n)    = pure $ DerefNullary n
-  mapDeRef f (Unary k a)    = DerefUnary k <$> f a
-  mapDeRef f (Binary k a b) = DerefBinary k <$> f a <*> f b
+  type DeRef (Prop a)              = UnsafeDerefProp
+  mapDeRef f (Prop (Nullary n))    = pure $ UnsafeDerefNullary n
+  mapDeRef f (Prop (Unary k a))    = UnsafeDerefUnary k <$> f a
+  mapDeRef f (Prop (Binary k a b)) = UnsafeDerefBinary k <$> f a <*> f b
 
-Graph DerefProp -> ST s (Prop c)
-
-lower1 :: (Prop a -> Prop b) -> Cell s a -> ST s (Cell s a)
-lower1 f a = do
-  g <- reifyGraph $ f (Nullary (return a)) 
--}
