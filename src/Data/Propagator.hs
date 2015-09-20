@@ -4,6 +4,7 @@ module Data.Propagator
   , Propagated(..)
   , PropagatedNum
   , PropagatedFloating
+  , PropagatedInterval
   , cell
   , cellWith
   , known
