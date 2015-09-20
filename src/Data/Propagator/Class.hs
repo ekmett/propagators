@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.Propagator.Class 
+module Data.Propagator.Class
   ( Change(..)
   , Propagated(..)
   , mergeDefault
@@ -24,7 +24,7 @@ import Numeric.Natural
 -- * 'Change' 'True' indicates that this is the new value, which gains information over the old.
 --
 -- * 'Contradiction' indicates that the updated information is inconsistent with the old.
-data Change a 
+data Change a
   = Change !Bool a
   | Contradiction String
   deriving (Functor, Foldable, Traversable)
@@ -51,7 +51,7 @@ instance Monad Change where
 instance MonadPlus Change where
   mzero = empty
   mplus = (<|>)
-  
+
 -- | This is a viable default definition for 'merge' for most simple values.
 mergeDefault :: (Eq a, Show a) => a -> a -> Change a
 mergeDefault a b
@@ -59,7 +59,12 @@ mergeDefault a b
   | otherwise = Contradiction $ (showString "merge: " . showsPrec 10 a . showString " /= " . showsPrec 10 b) ""
 
 -- | This class provides the default definition for how to 'merge' values in our information lattice.
+--
 class Propagated a where
+  -- | The first argument represents the old information. The second argument represents the new information.
+  -- When the new information causes us to learn something this should return a @'Change' 'True'@ with the combined
+  -- information. When it doesn't, it should return @'Change' 'False'@ with the old information. If new information
+  -- is inconsistent with the old, it should return 'Contradiction' instead.
   merge :: a -> a -> Change a
   default merge :: (Eq a, Show a) => a -> a -> Change a
   merge = mergeDefault
