@@ -43,10 +43,10 @@ library
 
   exposed-modules:
     Data.Propagator
-    Data.Propagator.Class
     Data.Propagator.Cell
+    Data.Propagator.Class
     Data.Propagator.Num
-    Data.Propagator.Prop.Internal
+    Data.Propagator.Unsafe
 
   ghc-options: -Wall -fwarn-tabs
 

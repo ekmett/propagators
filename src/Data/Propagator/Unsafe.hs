@@ -11,7 +11,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Unsafe #-}
 
-module Data.Propagator.Prop.Internal where
+module Data.Propagator.Unsafe where
 
 import Control.Monad
 import Control.Monad.Primitive
@@ -200,6 +200,9 @@ forwards f a = runST $ do
   write x a
   require y
 
+-- | Run a formula backwards.
+--
+-- >>> backwards (\c -> c *5/9 + 32) 0
 backwards :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> b -> Maybe a
 backwards f b = runST $ do
   x <- cell
@@ -207,5 +210,3 @@ backwards f b = runST $ do
   write y b
   require x
 
--- toFahrenheit :: (Eq a, Fractional a, Propagated a) => Prop s a -> Prop s a
--- toFahrenheit c = c / fromRational (5%9) + 32
