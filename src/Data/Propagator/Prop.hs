@@ -2,9 +2,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -176,7 +173,7 @@ lower2 f a b = lower (f (arg a) (arg b))
 
 -- | Run a 'Prop' formula forwards.
 --
--- >>> forwards (\c -> c * 5/9 + 32) 100
+-- >>> forwards (\c -> c * 9/5 + 32) 100
 -- Just 212.0
 forwards :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> a -> Maybe b
 forwards f a = runST $ do
@@ -187,7 +184,7 @@ forwards f a = runST $ do
 
 -- | Run a 'Prop' formula backwards.
 --
--- >>> backwards (\c -> c *5/9 + 32) 212
+-- >>> backwards (\c -> c * 9/5 + 32) 212
 -- Just 100.0
 backwards :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> b -> Maybe a
 backwards f b = runST $ do
