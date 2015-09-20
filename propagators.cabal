@@ -38,6 +38,7 @@ library
     base >= 4.8 && < 5,
     data-reify,
     ghc-prim,
+    intervals,
     primitive,
     unordered-containers
 

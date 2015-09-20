@@ -13,6 +13,7 @@ module Data.Propagator.Class
 
 import Control.Applicative
 import Control.Monad
+import Numeric.Interval.Internal (Interval(..))
 import Numeric.Natural
 
 -- | This represents the sorts of changes we can make as we accumulate information
@@ -94,3 +95,11 @@ instance (Propagated a, Propagated b) => Propagated (Either a b) where
   merge (Left a)  (Left b)  = Left <$> merge a b
   merge (Right a) (Right b) = Right <$> merge a b
   merge _ _ = fail "Left /= Right"
+
+-- | Propagated interval arithmetic
+instance (Num a, Ord a) => Propagated (Interval a) where
+  merge (I a b) (I c d)
+    | b < c || d < a = Change True Empty
+    | otherwise      = Change (a < c || b > d) $ I (max a c) (min b d)
+  merge Empty _ = Change False Empty
+  merge _ Empty = Change True Empty

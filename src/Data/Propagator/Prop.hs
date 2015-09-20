@@ -192,4 +192,3 @@ backwards f b = runST $ do
   y <- lower1 f x
   write y b
   require x
-

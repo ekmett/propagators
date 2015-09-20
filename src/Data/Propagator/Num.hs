@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Data.Propagator.Num where
@@ -8,6 +9,7 @@ import Control.Monad.ST
 import Data.Propagator.Cell
 import Data.Propagator.Class
 import Numeric.Natural
+import Numeric.Interval.Internal
 
 class Propagated a => PropagatedNum a where
   plus :: Cell s a -> Cell s a -> Cell s a -> ST s ()
@@ -25,6 +27,12 @@ class Propagated a => PropagatedNum a where
   default cabs :: (Num a, Eq a) => Cell s a -> Cell s a -> ST s ()
   cabs x y = do
     lift1 abs x y
+    watch y $ \b -> when (b == 0) $ write x 0
+
+  csignum :: Cell s a -> Cell s a -> ST s ()
+  default csignum :: (Num a, Eq a) => Cell s a -> Cell s a -> ST s ()
+  csignum x y = do
+    lift1 signum x y
     watch y $ \b -> when (b == 0) $ write x 0
 
 instance PropagatedNum Integer where
@@ -46,6 +54,7 @@ instance PropagatedNum Int
 
 instance PropagatedNum Word where
   cabs = unify
+
 
 timesFractional :: (Eq a, Fractional a) => Cell s a -> Cell s a -> Cell s a -> ST s ()
 timesFractional x y z = do
@@ -169,3 +178,33 @@ class PropagatedNum a => PropagatedFloating a where
 
 instance PropagatedFloating Float
 instance PropagatedFloating Double
+
+
+-- Interval arithmetic
+
+class (Floating a, Ord a) => PropagatedInterval a where
+  infinity :: a
+
+instance PropagatedInterval Double where
+  infinity = 1/0
+
+instance PropagatedInterval Float where
+  infinity = 1/0
+
+instance PropagatedInterval a => PropagatedNum (Interval a) where
+  times = timesFractional
+
+  cabs x y = do
+    write y (0...infinity)
+    lift1 abs x y
+    watch y $ \case
+      I _ b -> write x (-b...b)
+      Empty -> write x Empty
+
+  csignum x y = do
+    write y (-1...1)
+    lift1 signum x y
+    watch y $ \case
+      I a b | a < 1 && b > -1 -> write x $ I (if a <= -1 then -infinity else 0) (if b >= 1 then infinity else 0)
+      _ -> write x Empty
+
