@@ -36,11 +36,11 @@ flag test-hlint
 library
   build-depends:
     base >= 4.8 && < 5,
-    data-reify,
+    data-reify >= 0.6 && < 7,
     ghc-prim,
-    intervals,
-    primitive,
-    unordered-containers
+    intervals >= 0.7 && < 0.8,
+    primitive >= 0.5 && < 0.7,
+    unordered-containers >= 0.2 && < 0.3
 
   exposed-modules:
     Data.Propagator
@@ -65,9 +65,9 @@ test-suite doctests
     buildable: False
   else
     build-depends:
-      base >= 4.8,
-      directory      >= 1.0,
-      doctest        >= 0.9.1,
+      base      >= 4.8,
+      directory >= 1.0,
+      doctest   >= 0.9.1,
       filepath,
       parallel
 
