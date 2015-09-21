@@ -162,6 +162,7 @@ instance PropagatedInterval a => PropagatedNum (Interval a) where
   cabs x y = do
     write y (0...infinity)
     lift1 abs x y
+    -- todo: use symmetric_positive
     watch y $ \case
       I _ b -> write x (-b...b)
       Empty -> write x Empty
@@ -173,6 +174,23 @@ instance PropagatedInterval a => PropagatedNum (Interval a) where
       I a b | a < 1 && b > -1 -> write x $ I (if a <= -1 then -infinity else 0) (if b >= 1 then infinity else 0)
       _ -> write x Empty
 
+symmetric_positive :: (Num a, Ord a) => (Interval a -> Interval a) -> Cell s (Interval a) -> Cell s (Interval a) -> ST s ()
+symmetric_positive f x y = do
+  watch y $ \case
+    Empty -> write x Empty -- if the result is empty then the input is empty
+    I a a' -> do
+      when (a' <= 0) $ with x $ \c -> write y (- f c)
+      when (a >= 0)  $ with x $ \c -> write y (f c)
+  lift1 (\c -> let d = f c in hull (-d) d) x y
+
+-- x = f y + p*n
+-- n = (x - f y)/p, n is an integer
+periodic :: RealFrac a => Interval a -> (Interval a -> Interval a) -> Cell s (Interval a) -> Cell s (Interval a) -> ST s ()
+periodic p f x y = do
+  watch2 x y $ \a b -> let c = f b in case (a - c) / p of
+    Empty -> write x Empty
+    I l h -> write x (c + p*(fromIntegral (ceiling l :: Integer)...fromIntegral (floor h :: Integer)))
+  
 instance (PropagatedInterval a, RealFloat a) => PropagatedFloating (Interval a) where
   cexp x y = do
     write y (0...infinity)
@@ -181,24 +199,23 @@ instance (PropagatedInterval a, RealFloat a) => PropagatedFloating (Interval a) 
 
   csqrt x y = do
     write x (0...infinity)
-    write y (0...infinity)
-    lift1 sqrt x y
-    lift1 (\a -> a*a) y x
+    lift1 (\b -> b*b) y x
+    symmetric_positive sqrt x y
 
   csin x y = do
     write y (-1...1)
     lift1 sin x y
-    lift1 asin y x
+    periodic (2*pi) asin y x
 
   ccos x y = do
     write y (-1...1)
     lift1 cos x y
-    lift1 acos y x
+    periodic (2*pi) acos y x
 
   ctan x y = do
     write y (-pi/2...pi/2)
     lift1 tan x y
-    lift1 atan y x
+    periodic pi atan y x
 
   csinh x y = do
     lift1 sinh x y
@@ -207,7 +224,7 @@ instance (PropagatedInterval a, RealFloat a) => PropagatedFloating (Interval a) 
   ccosh x y = do
     write y (1...infinity)
     lift1 cosh x y
-    lift1 acosh y x
+    symmetric_positive acosh x y
 
   ctanh x y = do
     write y (-1...1)

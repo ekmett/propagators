@@ -49,9 +49,9 @@ unify x y = do
   watch x (write y)
   watch y (write x)
 
--- | Requiring the value of a 'Cell' will return the value of the cell if present.
-require :: Cell s a -> ST s (Maybe a)
-require (Cell _ c) = fst <$> readMutVar c
+-- | Extract the 'content' of a 'Cell'.
+content :: Cell s a -> ST s (Maybe a)
+content (Cell _ c) = fst <$> readMutVar c
 
 -- | Watching a 'Cell' sets up a callback that will be notified if the cell changes.
 watch :: Cell s a -> (a -> ST s ()) -> ST s ()

@@ -175,7 +175,7 @@ forwards f a = runST $ do
   x <- cell
   y <- lower1 f x
   write x a
-  require y
+  content y
 
 -- | Run a 'Prop' formula backwards.
 --
@@ -186,4 +186,4 @@ backwards f b = runST $ do
   x <- cell
   y <- lower1 f x
   write y b
-  require x
+  content x

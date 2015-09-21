@@ -8,7 +8,7 @@ module Data.Propagator
   , cell
   , cellWith
   , known
-  , write, require, with
+  , write, content, with
   , watch
   , watch2
   , lift1, lift2
