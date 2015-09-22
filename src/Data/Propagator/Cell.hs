@@ -10,6 +10,8 @@ module Data.Propagator.Cell where
 import Control.Monad
 import Control.Monad.ST
 import Data.Foldable
+import qualified Data.HashSet as HashSet
+import Data.List (intercalate)
 import Data.Primitive.MutVar
 import Data.Propagator.Class
 
@@ -39,9 +41,12 @@ write :: Cell s a -> a -> ST s ()
 write (Cell m r) a' = join $ atomicModifyMutVar' r $ \case
   (Nothing, ns) -> ((Just a', ns), ns a')
   old@(Just a, ns) -> case m a a' of
-    Contradiction e  -> (old, fail e)
-    Change False _   -> (old, return ())
-    Change True a''  -> ((Just a'', ns), ns a'')
+    Contradiction xs e 
+      | HashSet.null xs -> (old, fail e)
+      | e == ""         -> (old, fail "contradiction")
+      | otherwise       -> (old, fail (e ++ ", supported by: " ++ intercalate ", " (toList xs)))
+    Change False _  -> (old, return ())
+    Change True a'' -> ((Just a'', ns), ns a'')
 
 -- | Unifying two cells makes them exchange information as if they were one 'Cell'.
 unify :: Cell s a -> Cell s a -> ST s ()

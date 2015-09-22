@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Monad.ST
 import Data.Propagator.Cell
 import Data.Propagator.Class
+import Data.Propagator.Supported
 import Numeric.Natural
 import Numeric.Interval.Internal
 
@@ -42,6 +43,13 @@ instance PropagatedNum Integer where
       then watch x $ \ a -> when (a /= 0) $ write y 0
       else watch y $ \ b -> when (b /= 0) $ write x 0
 
+instance PropagatedNum (Supported Integer) where
+  ctimes x y z = do
+    lift2 (*) x y z
+    watch z $ \c -> if c == 0
+      then watch x $ \ a -> when (a /= 0) $ write y 0
+      else watch y $ \ b -> when (b /= 0) $ write x 0
+
 instance PropagatedNum Natural where
   ctimes x y z = do
     lift2 (*) x y z
@@ -50,11 +58,22 @@ instance PropagatedNum Natural where
       else watch y $ \ b -> when (b /= 0) $ write x 0
   cabs = unify
 
+instance PropagatedNum (Supported Natural) where
+  ctimes x y z = do
+    lift2 (*) x y z
+    watch z $ \c -> if c == 0
+      then watch x $ \ a -> when (a /= 0) $ write y 0
+      else watch y $ \ b -> when (b /= 0) $ write x 0
+  cabs = unify
+
 instance PropagatedNum Int
+instance PropagatedNum (Supported Int)
 
 instance PropagatedNum Word where
   cabs = unify
 
+instance PropagatedNum (Supported Word) where
+  cabs = unify
 
 ctimesFractional :: (Eq a, Fractional a) => Cell s a -> Cell s a -> Cell s a -> ST s ()
 ctimesFractional x y z = do
@@ -77,10 +96,19 @@ ctimesFractional x y z = do
 instance PropagatedNum Rational where
   ctimes = ctimesFractional
 
+instance PropagatedNum (Supported Rational) where
+  ctimes = ctimesFractional
+
 instance PropagatedNum Double where
   ctimes = ctimesFractional
 
+instance PropagatedNum (Supported Double) where
+  ctimes = ctimesFractional
+
 instance PropagatedNum Float where
+  ctimes = ctimesFractional
+
+instance PropagatedNum (Supported Float) where
   ctimes = ctimesFractional
 
 class PropagatedNum a => PropagatedFloating a where
@@ -143,17 +171,26 @@ class PropagatedNum a => PropagatedFloating a where
       write x (tanh b)
 
 instance PropagatedFloating Float
+instance PropagatedFloating (Supported Float)
 instance PropagatedFloating Double
+instance PropagatedFloating (Supported Double)
 
 -- Interval arithmetic
 
 class (Floating a, Ord a) => PropagatedInterval a where
   infinity :: a
 
+
 instance PropagatedInterval Double where
   infinity = 1/0
 
+instance PropagatedInterval (Supported Double) where
+  infinity = 1/0
+
 instance PropagatedInterval Float where
+  infinity = 1/0
+
+instance PropagatedInterval (Supported Float) where
   infinity = 1/0
 
 instance PropagatedInterval a => PropagatedNum (Interval a) where
@@ -190,7 +227,7 @@ periodic p f x y = do
   watch2 x y $ \a b -> let c = f b in case (a - c) / p of
     Empty -> write x Empty
     I l h -> write x (c + p*(fromIntegral (ceiling l :: Integer)...fromIntegral (floor h :: Integer)))
-  
+
 instance (PropagatedInterval a, RealFloat a) => PropagatedFloating (Interval a) where
   cexp x y = do
     write y (0...infinity)

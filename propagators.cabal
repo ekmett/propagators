@@ -48,6 +48,7 @@ library
     Data.Propagator.Class
     Data.Propagator.Num
     Data.Propagator.Prop
+    Data.Propagator.Supported
 
   ghc-options: -Wall -fwarn-tabs
 
