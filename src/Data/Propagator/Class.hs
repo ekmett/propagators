@@ -14,6 +14,7 @@ module Data.Propagator.Class
 import Control.Applicative
 import Control.Monad
 import Data.HashSet
+import Data.Propagator.Name
 import Numeric.Interval.Internal (Interval(..))
 import Numeric.Natural
 
@@ -27,7 +28,7 @@ import Numeric.Natural
 -- * 'Contradiction' indicates that the updated information is inconsistent with the old.
 data Change a
   = Change !Bool a
-  | Contradiction (HashSet String) String
+  | Contradiction !(HashSet Name) String
   deriving (Functor, Foldable, Traversable)
 
 instance Applicative Change where

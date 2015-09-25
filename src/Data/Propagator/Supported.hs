@@ -4,9 +4,10 @@ module Data.Propagator.Supported where
 import Control.Applicative
 import Data.HashSet
 import Data.Propagator.Class
+import Data.Propagator.Name
 
-data Supported a = Supported !(HashSet String) a
-  deriving (Functor, Foldable, Traversable, Read, Show)
+data Supported a = Supported !(HashSet Name) a
+  deriving (Functor, Foldable, Traversable, Show)
 
 instance Eq a => Eq (Supported a) where
   Supported _ a == Supported _ b = a == b
