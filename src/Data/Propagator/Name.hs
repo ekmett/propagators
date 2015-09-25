@@ -2,7 +2,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE MagicHash #-}
-module Data.Propagator.Name 
+module Data.Propagator.Name
   ( Name
   , fresh
   , fork
@@ -19,42 +19,43 @@ import Data.String
 import GHC.Prim
 import GHC.Types
 
-data Path
-  = U Addr# (MutableByteArray# RealWorld)
-  | S String
-  | P !Path !Path
-  | C {-# UNPACK #-} !Int Path
-
-instance Eq Path where
-  U _ i == U _ j = isTrue# (sameMutableByteArray# i j)
-  S s   == S t   = s == t
-  P p q == P r s = p == r && q == s
-  C m p == C n q = m == n && p == q
-  _ == _ = False
-
-instance Show Path where
-  showsPrec d (U a _) = showParen (d > 10) $ showString "unique {" . showsPrec 11 (I# (addr2Int# a)) . showChar '}'
-  showsPrec d (S s) = showsPrec d s
-  showsPrec d (P l r) = showParen (d > 10) $ showString "P " . showsPrec 11 l . showChar ' ' . showsPrec 11 r
-  showsPrec d (C n p) = showParen (d > 10) $ showString "C " . showsPrec 11 n . showChar ' ' . showsPrec 11 p
-
-data Name = Name
-  {-# UNPACK #-} !Int
-  {-# UNPACK #-} !Int
-  !Path
-  deriving Show
-
-height :: Name -> Int
-height (Name _ h _) = h
-{-# INLINE height #-}
+data Name
+  = U {-# UNPACK #-} !Int (MutableByteArray# RealWorld)
+  | S {-# UNPACK #-} !Int String
+  | P {-# UNPACK #-} !Int {-# UNPACK #-} !Int !Name !Name
+  | C {-# UNPACK #-} !Int {-# UNPACK #-} !Int {-# UNPACK #-} !Int !Name
 
 instance Eq Name where
-  Name i _ p == Name j _ q = i == j && p == q
-  {-# INLINE (==) #-}
+  U _ i     == U _ j     = isTrue# (sameMutableByteArray# i j)
+  S i s     == S j t     = i == j && s == t
+  P i _ p q == P j _ r s = i == j && p == r && q == s
+  C i _ m p == C j _ n q = i == j && m == n && p == q
+  _ == _ = False
+
+instance Show Name where
+  showsPrec d (U i _)   = showParen (d > 10) $ showString "U " . showsPrec 11 i . showString " ..."
+  showsPrec d (S _ s)   = showsPrec d s
+  showsPrec d (P i h l r) = showParen (d > 10) $ showString "P " . showsPrec 11 i . showChar ' ' . showsPrec 11 h . showChar ' ' . showsPrec 11 l . showChar ' ' . showsPrec 11 r
+  showsPrec d (C i h n p) = showParen (d > 10) $ showString "C " . showsPrec 11 i . showChar ' ' . showsPrec 11 h . showChar ' ' . showsPrec 11 n . showChar ' ' . showsPrec 11 p
+
+height :: Name -> Int
+height (U i _) = ffs i
+height (S i _) = ffs i
+height (P _ h _ _) = h
+height (C _ h _ _) = h
+{-# INLINE height #-}
 
 instance Hashable Name where
-  hashWithSalt d (Name h _ _) = hashWithSalt d h
+  hashWithSalt d (U i _) = hashWithSalt d i
+  hashWithSalt d (S i _) = hashWithSalt d i
+  hashWithSalt d (P i _ _ _) = hashWithSalt d i
+  hashWithSalt d (C i _ _ _) = hashWithSalt d i
   {-# INLINE hashWithSalt #-}
+  hash (U i _) = i
+  hash (S i _) = i
+  hash (P i _ _ _) = i
+  hash (C i _ _ _) = i
+  {-# INLINE hash #-}
 
 ffs :: Int -> Int
 ffs 0 = 0
@@ -62,36 +63,31 @@ ffs x = countTrailingZeros x + 1
 {-# INLINE ffs #-}
 
 instance IsString Name where
-  fromString s = name (hash s) (S s)
+  fromString s = S (hash s) s
   {-# INLINE fromString #-}
 
-name :: Int -> Path -> Name
-name h p = Name h (ffs h) p
-{-# INLINE name #-}
-
--- | gensym. this scheme avoids the unique barrier.
+-- | gensym
 fresh :: PrimMonad m => m Name
 fresh = unsafePrimToPrim $ IO $ \s -> case newByteArray# 0# s of
-  (# s', ba #) -> case unsafeCoerce# ba of
-    n# -> (# s', name (I# (addr2Int# n#)) (U n# ba) #)
+  (# s', ba #) -> (# s', U (I# (addr2Int# (unsafeCoerce# ba))) ba #)
 {-# INLINE fresh #-}
 
 -- | obtain the name of two children deterministically.
 fork :: Name -> (Name, Name)
-fork n = (child 1 n, child 2 n)
+fork n = (child n 1, child n 2)
 {-# INLINE fork #-}
 
 -- | obtain the name of the kth child (starting from 1)
-child :: Int -> Name -> Name
-child d (Name i h p) = Name (hashWithSalt d i) h (C d p)
+child :: Name -> Int -> Name
+child n d = C (hashWithSalt d n) (height n) d n
 {-# INLINE child #-}
 
 -- | obtain the names of all children
 children :: Name -> [Name]
-children n = (`child` n) <$> [1..]
+children n = child n <$> [1..]
 {-# INLINE children #-}
 
 -- | build a name based on two existing names
 pair :: Name -> Name -> Name
-pair (Name i h p) (Name j h' q) = Name (hashWithSalt i j) (min h h') (P p q)
+pair m n = P (hashWithSalt (hash m) n) (height m `min` height n) m n
 {-# INLINE pair #-}
