@@ -1,4 +1,7 @@
 -- | Inspired by the names in nominal adapton.
+{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE MagicHash #-}
 module Data.Propagator.Name 
   ( Name
   , fresh
@@ -12,21 +15,28 @@ module Data.Propagator.Name
 import Control.Monad.Primitive
 import Data.Bits
 import Data.Hashable
-import Data.IORef
-import Data.Int
 import Data.String
-import System.IO.Unsafe
-
-supply :: IORef Int64
-supply = unsafePerformIO (newIORef 0)
-{-# NOINLINE supply #-}
+import GHC.Prim
+import GHC.Types
 
 data Path
-  = U {-# UNPACK #-} !Int64
+  = U Addr# (MutableByteArray# RealWorld)
   | S String
   | P !Path !Path
   | C {-# UNPACK #-} !Int Path
-  deriving (Show, Eq)
+
+instance Eq Path where
+  U _ i == U _ j = isTrue# (sameMutableByteArray# i j)
+  S s   == S t   = s == t
+  P p q == P r s = p == r && q == s
+  C m p == C n q = m == n && p == q
+  _ == _ = False
+
+instance Show Path where
+  showsPrec d (U a _) = showParen (d > 10) $ showString "unique {" . showsPrec 11 (I# (addr2Int# a)) . showChar '}'
+  showsPrec d (S s) = showsPrec d s
+  showsPrec d (P l r) = showParen (d > 10) $ showString "P " . showsPrec 11 l . showChar ' ' . showsPrec 11 r
+  showsPrec d (C n p) = showParen (d > 10) $ showString "C " . showsPrec 11 n . showChar ' ' . showsPrec 11 p
 
 data Name = Name
   {-# UNPACK #-} !Int
@@ -59,11 +69,11 @@ name :: Int -> Path -> Name
 name h p = Name h (ffs h) p
 {-# INLINE name #-}
 
--- | gensym
+-- | gensym. this scheme avoids the unique barrier.
 fresh :: PrimMonad m => m Name
-fresh = unsafePrimToPrim $ do
-  u <- atomicModifyIORef' supply $ \x -> let z = x+1 in (z,z)
-  return $ name (fromIntegral u) (U u)
+fresh = unsafePrimToPrim $ IO $ \s -> case newByteArray# 0# s of
+  (# s', ba #) -> case unsafeCoerce# ba of
+    n# -> (# s', name (I# (addr2Int# n#)) (U n# ba) #)
 {-# INLINE fresh #-}
 
 -- | obtain the name of two children deterministically.
