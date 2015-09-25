@@ -38,6 +38,7 @@ instance Show Name where
   showsPrec d (P i h l r) = showParen (d > 10) $ showString "P " . showsPrec 11 i . showChar ' ' . showsPrec 11 h . showChar ' ' . showsPrec 11 l . showChar ' ' . showsPrec 11 r
   showsPrec d (C i h n p) = showParen (d > 10) $ showString "C " . showsPrec 11 i . showChar ' ' . showsPrec 11 h . showChar ' ' . showsPrec 11 n . showChar ' ' . showsPrec 11 p
 
+-- | Has a negative binomial distribution. Same for any forked children.
 height :: Name -> Int
 height (U i _) = ffs i
 height (S i _) = ffs i
@@ -57,6 +58,7 @@ instance Hashable Name where
   hash (C i _ _ _) = i
   {-# INLINE hash #-}
 
+-- | \"find first set\"
 ffs :: Int -> Int
 ffs 0 = 0
 ffs x = countTrailingZeros x + 1
@@ -66,28 +68,30 @@ instance IsString Name where
   fromString s = S (hash s) s
   {-# INLINE fromString #-}
 
--- | gensym
+-- | Generate a fresh name.
 fresh :: PrimMonad m => m Name
 fresh = unsafePrimToPrim $ IO $ \s -> case newByteArray# 0# s of
   (# s', ba #) -> (# s', U (I# (addr2Int# (unsafeCoerce# ba))) ba #)
 {-# INLINE fresh #-}
 
--- | obtain the name of two children deterministically.
+-- | Obtain the name of two children deterministically.
 fork :: Name -> (Name, Name)
 fork n = (child n 1, child n 2)
 {-# INLINE fork #-}
 
--- | obtain the name of the kth child (starting from 1)
+-- | Obtain the name of the kth child.
 child :: Name -> Int -> Name
 child n d = C (hashWithSalt d n) (height n) d n
 {-# INLINE child #-}
 
--- | obtain the names of all children
+-- | Obtain a list of the names of all children
 children :: Name -> [Name]
-children n = child n <$> [1..]
+children n = map (\d -> C (hashWithSalt d i) h d n) [1..] where
+  i = hash n
+  h = height n
 {-# INLINE children #-}
 
 -- | build a name based on two existing names
 pair :: Name -> Name -> Name
-pair m n = P (hashWithSalt (hash m) n) (height m `min` height n) m n
+pair m n = P (hash m `hashWithSalt` n) (height m `min` height n) m n
 {-# INLINE pair #-}
