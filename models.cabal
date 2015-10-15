@@ -37,6 +37,7 @@ library
   build-depends:
     atomic-primops >= 0.7 && < 0.9,
     base >= 4.8 && < 5,
+    contravariant,
     ghc-prim,
     mwc-random,
     primitive,
@@ -48,7 +49,9 @@ library
     Model.Backoff
     Model.Counted
     Model.Deque
+    Model.Observer
     Model.Par
+    Model.Task
 
   ghc-options: -Wall -fwarn-tabs
 
