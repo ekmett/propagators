@@ -15,9 +15,9 @@ import Data.Primitive.Array
 import Data.Traversable (for)
 import System.Random.MWC as MWC
 import Model.Internal.Deque as Deque
-import Model.Internal.Task
+import Model.Internal.Fiber
 
-newtype Par a = Par { unPar :: (a -> Task ()) -> Task () }
+newtype Par a = Par { unPar :: (a -> Fiber ()) -> Fiber () }
   deriving Functor
 
 instance Applicative Par where
@@ -30,7 +30,7 @@ instance Monad Par where
 
 -- | I need a simple form of IVar in order to implement MonadZip
 
-data IVar a = IVar (IORef (Either a [a -> Task ()]))
+data IVar a = IVar (IORef (Either a [a -> Fiber ()]))
 
 newIVar :: Par (IVar a)
 newIVar = io $ IVar <$> newIORef (Right [])
@@ -79,7 +79,7 @@ runPar_ (Par m) = do
     pool <- Deque.empty
     seed <- MWC.create
     workers <- newArray 0 (error "PANIC! runPar_ missing worker 0")
-    runTask (m $ const schedule) Worker { ident=0, .. }
+    runFiber (m $ const schedule) Worker { ident=0, .. }
   else do
     putStrLn $ show n ++ " capabilities"
     tid <- myThreadId
@@ -101,8 +101,8 @@ runPar_ (Par m) = do
     forM_ ws $ \i -> forM_ iws $ \j -> writeArray (workers i) (ident j) j
     forM_ iws $ \i -> do
        writeArray (workers i) (ident i) lws
-       forkOn (k + 1 + ident i) (runTask schedule i) -- distribute the other workers to other capabilities mod n
-    runTask (m $ const schedule) lws                 -- process the last thing locally for now.
+       forkOn (k + 1 + ident i) (runFiber schedule i) -- distribute the other workers to other capabilities mod n
+    runFiber (m $ const schedule) lws                 -- process the last thing locally for now.
 
 runPar :: Par a -> IO a
 runPar m = do

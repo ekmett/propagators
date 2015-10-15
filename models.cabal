@@ -48,7 +48,7 @@ library
     Model.Internal.Backoff
     Model.Internal.Counted
     Model.Internal.Deque
-    Model.Internal.Task
+    Model.Internal.Fiber
     Model.Internal.Util
     Model.Observer
     Model.Par
