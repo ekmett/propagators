@@ -25,9 +25,9 @@ data Worker = Worker
   { ident   :: {-# UNPACK #-} !Int
   , pool    :: !(Deque (Fiber ()))
   , workers :: !(MutableArray RealWorld Worker) -- Other Workers. They will get shuffled as we schedule work stealing
-  , idlers  :: !(IORef (Counted (MVar (Fiber ()))))
-  , seed    :: Gen RealWorld
-  , karma   :: IORef Int
+  , idlers  :: {-# UNPACK #-} !(IORef (Counted (MVar (Fiber ()))))
+  , seed    :: !(Gen RealWorld)
+  , karma   :: {-# UNPACK #-} !(IORef Int)
   }
 
 -- TODO: change workers to just contain an IO action that can do stealing. This prevents us from holding the entire other worker alive and makes a safer back-end.
