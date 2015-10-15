@@ -33,10 +33,10 @@ module Model.Deque
   ) where
 
 import Control.Exception (evaluate)
-import Control.Lens
 import Data.Atomics (storeLoadBarrier, writeBarrier, loadLoadBarrier)
 import Data.Atomics.Counter
 import Data.Foldable hiding (null)
+import Data.Functor.Reverse
 import Data.IORef
 import qualified Data.Vector as V
 import Data.Vector (Vector)
@@ -54,9 +54,8 @@ import Prelude hiding (null)
 -- where the dequeue-only 'steal' side can be used concurrently, but the \"local\" side may
 -- that provides 'push' and 'pop' can only be used from a single owner thread.
 data Deque a = Deque
-  { _bottom :: {-# UNPACK #-} !AtomicCounter -- TODO: would it be worth making one larger MutableByteArray# 
-  , _top    :: {-# UNPACK #-} !AtomicCounter -- and then putting these at least a cache line apart to avoid conflict?
-  , _array  :: {-# UNPACK #-} !(IORef (MVector RealWorld a))
+  { bottom, top :: {-# UNPACK #-} !AtomicCounter -- TODO: would it be worth making one larger MutableByteArray# and then putting these at least a cache line apart to avoid conflict?
+  , array  :: {-# UNPACK #-} !(IORef (MVector RealWorld a))
   }
 
 -- | Create a new 'empty' 'Deque'.
@@ -215,7 +214,7 @@ push obj (Deque bottom top array) = do
 
 -- TODO: consolidate the writes behind one barrier!
 pushMany :: Foldable f => f a -> Deque a -> IO ()
-pushMany objs d = forMOf_ (backwards folded) objs $ \a -> push a d
+pushMany objs d = for_ (Reverse objs) $ \a -> push a d
 {-# INLINE pushMany #-}
 
 -- | This is the work-stealing dequeue operation.
