@@ -45,7 +45,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector.Mutable as MV
 import Data.Vector.Mutable (MVector)
 import GHC.Prim (RealWorld)
-import Model.Internal.For
+import Model.Internal.Util
 import Prelude hiding (null)
 
 -- $setup

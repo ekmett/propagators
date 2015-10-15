@@ -1,5 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
-module Model.Internal.For where
+{-# LANGUAGE MagicHash #-}
+module Model.Internal.Util where
+
+import Data.Primitive.Array
+import GHC.Exts as Exts
+
+sizeofMutableArray :: MutableArray s a -> Int
+sizeofMutableArray (MutableArray s) = I# (Exts.sizeofMutableArray# s)
 
 -- My own forM for numeric ranges (not requiring deforestation optimizations).
 -- Inclusive start, exclusive end.

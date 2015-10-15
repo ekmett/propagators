@@ -45,12 +45,11 @@ library
     vector
 
   exposed-modules:
-    Model.Internal.Array
     Model.Internal.Backoff
     Model.Internal.Counted
     Model.Internal.Deque
-    Model.Internal.For
     Model.Internal.Task
+    Model.Internal.Util
     Model.Observer
     Model.Par
     Model.Subscription
