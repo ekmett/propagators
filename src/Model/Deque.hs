@@ -1,6 +1,8 @@
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2012-15 Edward Kmett, Ryan Newton
@@ -69,11 +71,11 @@ data Deque a = Deque
 -- Nothing
 empty :: IO (Deque a)
 empty = do
-  bot <- newCounter 0 -- try to allocate them a bit separated
+  bottom <- newCounter 0 -- try to allocate them a bit separated
   v <- MV.new 32
-  ref <- newIORef v
+  array <- newIORef v
   top <- newCounter 0
-  return (Deque bot top ref)
+  return Deque{..}
 
 -- | Create a new 'Deque' with one element in it.
 --
@@ -86,12 +88,12 @@ empty = do
 -- Nothing
 singleton :: forall a. a -> IO (Deque a)
 singleton a = do
-  bot <- newCounter 1
+  bottom <- newCounter 1
   v <- MV.new 32
   MV.unsafeWrite v 0 a
-  ref <- newIORef v
+  array <- newIORef v
   top <- newCounter 0
-  return (Deque bot top ref)
+  return Deque{..}
 
 -- | Generate a work-stealing 'Deque' of elements from a list.
 --
@@ -113,19 +115,19 @@ singleton a = do
 fromList :: forall a. [a] -> IO (Deque a)
 fromList as = do
   v <- V.unsafeThaw (V.reverse (V.fromList as :: Vector a)) -- TODO: pad this out to an initial 32 entries?
-  bot <- newCounter (MV.length v)
+  bottom <- newCounter (MV.length v)
+  array <- newIORef v
   top <- newCounter 0
-  ref <- newIORef v
-  return (Deque bot top ref)
+  return Deque{..}
 
 -- | Generate a work-stealing 'Deque' of elements from a list of known length.
 fromListN :: forall a. Int -> [a] -> IO (Deque a)
 fromListN n as = do
   v <- V.unsafeThaw (V.reverse (V.fromListN n as :: Vector a))
-  bot <- newCounter (MV.length v)
+  bottom <- newCounter (MV.length v)
+  array <- newIORef v
   top <- newCounter 0
-  ref <- newIORef v
-  return (Deque bot top ref)
+  return Deque{..}
 
 -- | @null@ returns 'True' if the 'Deque' is definitely empty.
 --
@@ -137,8 +139,8 @@ fromListN n as = do
 -- >>> null q
 -- True
 null :: Deque a -> IO Bool
-null (Deque bot top _) = do
-  b <- readCounter bot
+null Deque{..} = do
+  b <- readCounter bottom
   t <- readCounter top
   let sz = b - t
   return (sz <= 0)
@@ -148,10 +150,10 @@ null (Deque bot top _) = do
 -- Under contention from stealing threads or when used by a stealing thread these
 -- numbers may well differ.
 size :: Deque a -> IO (Int, Int)
-size (Deque bot top _) = do
-  b1 <- readCounter bot
+size Deque{..} = do
+  b1 <- readCounter bottom
   t  <- readCounter top
-  b2 <- readCounter bot
+  b2 <- readCounter bottom
   let sz1 = b1 - t -- always the lower bound on x86, due to lack of load reordering
       sz2 = b2 - t -- always the upper bound on x86, due to lack of load reordering
   return (min sz1 sz2, max sz1 sz2)
@@ -186,7 +188,7 @@ size (Deque bot top _) = do
 -- >>> steal p
 -- Nothing
 push :: a -> Deque a -> IO ()
-push obj (Deque bottom top array) = do
+push obj Deque{..} = do
   b   <- readCounter bottom
   t   <- readCounter top
   arr <- readIORef array
@@ -226,7 +228,7 @@ pushMany objs d = for_ (Reverse objs) $ \a -> push a d
 --
 -- However, at least one of the concurrently stealing threads will succeed.
 steal :: Deque a -> IO (Maybe a)
-steal (Deque bottom top array) = do
+steal Deque{..} = do
   -- NB. these loads must be ordered, otherwise there is a race
   -- between steal and pop.
   tt  <- readCounterForCAS top
@@ -244,7 +246,7 @@ steal (Deque bottom top array) = do
 -- | Locally pop the 'Deque'. This is not a thread safe operation, and should
 -- only be invoked on from the thread that \"owns\" the 'Deque'.
 pop :: Deque a -> IO (Maybe a)
-pop (Deque bottom top array) = do
+pop Deque{..} = do
   b0  <- readCounter bottom
   arr <- readIORef array
   b   <- evaluate (b0-1)
