@@ -7,7 +7,6 @@
 module Model.Par where
 
 import Control.Concurrent
-import Control.Concurrent.MVar
 import Data.IORef
 import Data.Foldable
 import Data.Primitive.Array
