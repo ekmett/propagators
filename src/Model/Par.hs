@@ -105,39 +105,29 @@ runPar_ :: Par a -> IO ()
 runPar_ (Par m) = do
   idlers <- newIORef []
   n <- getNumCapabilities
-  d <- if n == 1 then do
-    -- putStrLn "1 capability"
+  tid <- myThreadId
+  (k,_locked) <- threadCapability tid
+  ws <- for [0..n-1] $ \ident -> do
     pool <- Deque.empty
     seed <- MWC.create
     karma <- newIORef 0
-    workers <- newArray 0 (error "PANIC! runPar_ missing worker 0")
-    runFiber (m $ const schedule) Worker { ident=0, .. }
-    readIORef karma
-  else do
-    -- putStrLn $ show n ++ " capabilities"
-    tid <- myThreadId
-    (k,_locked) <- threadCapability tid
-    ws <- for [0..n-1] $ \ident -> do
-      pool <- Deque.empty
-      seed <- MWC.create
-      karma <- newIORef 0
-      workers <- newArray (n-1) $ error $ "PANIC! runPar_ missing worker in " ++ show ident
-      return Worker {..}
-    -- 01234
-    -- becomes
-    -- 0: 4123 iws[0]
-    -- 1: 0423 iws[1]
-    -- 2: 0143 iws[2]
-    -- 3: 0124 iws[3]
-    -- 4: 0123 lws
-    let iws = init ws
-        lws = last ws
-    forM_ ws $ \i -> forM_ iws $ \j -> writeArray (workers i) (ident j) j
-    forM_ iws $ \i -> do
-       writeArray (workers i) (ident i) lws
-       forkOn (k + 1 + ident i) (runFiber schedule i) -- distribute the other workers to other capabilities mod n
-    runFiber (m $ const schedule) lws                 -- process the last thing locally for now.
-    foldlM (\x i -> do y <- readIORef (karma i); return $! x + y) 0 ws
+    workers <- newArray (n-1) $ error $ "PANIC! runPar_ missing worker in " ++ show ident
+    return Worker {..}
+  -- 01234
+  -- becomes
+  -- 0: 4123 iws[0]
+  -- 1: 0423 iws[1]
+  -- 2: 0143 iws[2]
+  -- 3: 0124 iws[3]
+  -- 4: 0123 lws
+  let iws = init ws
+      lws = last ws
+  forM_ ws $ \i -> forM_ iws $ \j -> writeArray (workers i) (ident j) j
+  forM_ iws $ \i -> do
+    writeArray (workers i) (ident i) lws
+    forkOn (k + 1 + ident i) (runFiber schedule i) -- distribute the other workers to other capabilities mod n
+  runFiber (m $ const schedule) lws                 -- process the last thing locally for now.
+  d <- foldlM (\x i -> do y <- readIORef (karma i); return $! x + y) 0 ws
   -- putStrLn $ "karma: " ++ show d
   when (d < 0) $ throwIO BlockedIndefinitelyOnIVar
 
