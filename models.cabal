@@ -35,13 +35,17 @@ flag test-hlint
 
 library
   build-depends:
-    atomic-primops >= 0.7 && < 0.9
+    atomic-primops >= 0.7 && < 0.9,
     base >= 4.8 && < 5,
     ghc-prim,
-    vector
+    mwc-random,
+    primitive
 
   exposed-modules:
+    Model.Array
+    Model.Counted
     Model.Deque
+    Model.Par
 
   ghc-options: -Wall -fwarn-tabs
 
