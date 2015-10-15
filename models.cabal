@@ -45,13 +45,14 @@ library
     vector
 
   exposed-modules:
-    Model.Array
-    Model.Backoff
-    Model.Counted
-    Model.Deque
+    Model.Internal.Array
+    Model.Internal.Backoff
+    Model.Internal.Counted
+    Model.Internal.Deque
+    Model.Internal.Task
     Model.Observer
     Model.Par
-    Model.Task
+    Model.Subscription
 
   ghc-options: -Wall -fwarn-tabs
 

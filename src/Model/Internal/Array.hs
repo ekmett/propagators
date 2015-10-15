@@ -1,5 +1,5 @@
 {-# LANGUAGE MagicHash #-}
-module Model.Array where
+module Model.Internal.Array where
 
 import Data.Primitive.Array
 import GHC.Exts as Exts

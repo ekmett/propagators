@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Model.Backoff where
+module Model.Internal.Backoff where
 
 import Control.Concurrent
 

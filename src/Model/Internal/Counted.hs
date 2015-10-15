@@ -2,7 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveTraversable #-}
-module Model.Counted where
+module Model.Internal.Counted where
 
 import Control.Applicative
 import Control.Monad

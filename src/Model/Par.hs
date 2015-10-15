@@ -6,7 +6,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 module Model.Par where
 
-import Model.Task
+import Model.Internal.Task
 
 newtype Par a = Par { unPar :: (a -> Task) -> Task }
   deriving Functor

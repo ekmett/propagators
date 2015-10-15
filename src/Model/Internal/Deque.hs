@@ -17,7 +17,7 @@
 -- <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.170.1097&rep=rep1&type=pdf 2005 SPAA paper>.
 --
 -----------------------------------------------------------------------------
-module Model.Deque 
+module Model.Internal.Deque 
   ( Deque
   -- * Initialization
   , empty

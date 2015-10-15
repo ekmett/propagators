@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
-module Model.Task where
+module Model.Internal.Task where
 
 import Control.Concurrent.MVar
 import Control.Monad (join, when)
@@ -11,9 +11,9 @@ import Control.Monad.Primitive
 import Data.Foldable
 import Data.IORef
 import Data.Primitive.Array
-import Model.Array
-import Model.Counted
-import Model.Deque as Deque
+import Model.Internal.Array
+import Model.Internal.Counted
+import Model.Internal.Deque as Deque
 import System.Random.MWC
 
 type Task = Worker -> IO ()
