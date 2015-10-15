@@ -3,7 +3,6 @@
 module Model.Backoff where
 
 import Control.Concurrent
-import Data.Default
 
 data Backoff = Backoff
   { current
@@ -11,8 +10,8 @@ data Backoff = Backoff
   , totalWait :: {-# UNPACK #-} !Int
   }
 
-instance Default Backoff where
-  def = Backoff 0 10000 0 -- 10ms
+default :: Backoff
+default = Backoff 0 10000 0 -- 10ms
 
 backoff :: Backoff -> IO Backoff
 backoff b@Backoff{..}

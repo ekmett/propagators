@@ -39,10 +39,12 @@ library
     base >= 4.8 && < 5,
     ghc-prim,
     mwc-random,
-    primitive
+    primitive,
+    vector
 
   exposed-modules:
     Model.Array
+    Model.Backoff
     Model.Counted
     Model.Deque
     Model.Par
