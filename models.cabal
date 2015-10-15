@@ -50,6 +50,7 @@ library
     Model.Internal.Deque
     Model.Internal.Fiber
     Model.Internal.Util
+    Model.PrimRef
     Model.Observer
     Model.Par
     Model.Subscription
