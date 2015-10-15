@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2012-15 Edward Kmett, Ryan Newton
@@ -35,16 +36,15 @@ module Model.Internal.Deque
   ) where
 
 import Control.Exception (evaluate)
+import Control.Monad.Primitive
 import Data.Atomics (storeLoadBarrier, writeBarrier, loadLoadBarrier)
 import Data.Atomics.Counter
 import Data.Foldable hiding (null)
 import Data.Functor.Reverse
 import Data.IORef
 import qualified Data.Vector as V
-import Data.Vector (Vector)
 import qualified Data.Vector.Mutable as MV
 import Data.Vector.Mutable (MVector)
-import GHC.Prim (RealWorld)
 import Model.Internal.Util
 import Prelude hiding (null)
 
@@ -70,8 +70,8 @@ data Deque a = Deque
 -- Nothing
 -- >>> steal q
 -- Nothing
-empty :: IO (Deque a)
-empty = do
+empty :: (PrimMonad m, PrimState m ~ RealWorld) => m (Deque a)
+empty = primIO $ do
   bottom <- newCounter 0 -- try to allocate them a bit separated
   v <- MV.new 32
   array <- newIORef v
@@ -87,8 +87,8 @@ empty = do
 -- Just "hello"
 -- >>> pop q
 -- Nothing
-singleton :: forall a. a -> IO (Deque a)
-singleton a = do
+singleton :: (PrimMonad m, PrimState m ~ RealWorld) => a -> m (Deque a)
+singleton a = primIO $ do
   bottom <- newCounter 1
   v <- MV.new 32
   MV.unsafeWrite v 0 a
@@ -113,18 +113,18 @@ singleton a = do
 -- >>> p <- fromList [1,2,3,4 :: Int]
 -- >>> steal p
 -- Just 4
-fromList :: forall a. [a] -> IO (Deque a)
-fromList as = do
-  v <- V.unsafeThaw (V.reverse (V.fromList as :: Vector a)) -- TODO: pad this out to an initial 32 entries?
+fromList :: (PrimMonad m, PrimState m ~ RealWorld) => [a] -> m (Deque a)
+fromList as = primIO $ do
+  v <- V.unsafeThaw (V.reverse (V.fromList as)) -- TODO: pad this out to an initial 32 entries?
   bottom <- newCounter (MV.length v)
   array <- newIORef v
   top <- newCounter 0
   return Deque{..}
 
 -- | Generate a work-stealing 'Deque' of elements from a list of known length.
-fromListN :: forall a. Int -> [a] -> IO (Deque a)
-fromListN n as = do
-  v <- V.unsafeThaw (V.reverse (V.fromListN n as :: Vector a))
+fromListN :: (PrimMonad m, PrimState m ~ RealWorld) => Int -> [a] -> m (Deque a)
+fromListN n as = primIO $ do
+  v <- V.unsafeThaw (V.reverse (V.fromListN n as))
   bottom <- newCounter (MV.length v)
   array <- newIORef v
   top <- newCounter 0
@@ -139,8 +139,8 @@ fromListN n as = do
 -- Just 1
 -- >>> null q
 -- True
-null :: Deque a -> IO Bool
-null Deque{..} = do
+null :: (PrimMonad m, PrimState m ~ RealWorld) => Deque a -> m Bool
+null Deque{..} = primIO $  do
   b <- readCounter bottom
   t <- readCounter top
   let sz = b - t
@@ -150,8 +150,8 @@ null Deque{..} = do
 --
 -- Under contention from stealing threads or when used by a stealing thread these
 -- numbers may well differ.
-size :: Deque a -> IO (Int, Int)
-size Deque{..} = do
+size :: (PrimMonad m, PrimState m ~ RealWorld) => Deque a -> m (Int, Int)
+size Deque{..} = primIO $ do
   b1 <- readCounter bottom
   t  <- readCounter top
   b2 <- readCounter bottom
@@ -188,8 +188,8 @@ size Deque{..} = do
 -- Just "world"
 -- >>> steal p
 -- Nothing
-push :: a -> Deque a -> IO ()
-push obj Deque{..} = do
+push :: (PrimMonad m, PrimState m ~ RealWorld) => a -> Deque a -> m ()
+push obj Deque{..} = primIO $ do
   b   <- readCounter bottom
   t   <- readCounter top
   arr <- readIORef array
@@ -216,8 +216,8 @@ push obj Deque{..} = do
   return ()
 
 -- TODO: consolidate the writes behind one barrier!
-pushes :: Foldable f => f a -> Deque a -> IO ()
-pushes objs d = for_ (Reverse objs) $ \a -> push a d
+pushes :: (PrimMonad m, PrimState m ~ RealWorld, Foldable f) => f a -> Deque a -> m ()
+pushes objs d = primIO $ for_ (Reverse objs) $ \a -> push a d
 {-# INLINE pushes #-}
 
 -- | This is the work-stealing dequeue operation.
@@ -228,8 +228,8 @@ pushes objs d = for_ (Reverse objs) $ \a -> push a d
 -- so failing to read is /not/ an indication that the 'Deque' is empty!
 --
 -- However, at least one of the concurrently stealing threads will succeed.
-steal :: Deque a -> IO (Maybe a)
-steal Deque{..} = do
+steal :: (PrimMonad m, PrimState m ~ RealWorld) => Deque a -> m (Maybe a)
+steal Deque{..} = primIO $ do
   -- NB. these loads must be ordered, otherwise there is a race
   -- between steal and pop.
   tt  <- readCounterForCAS top
@@ -246,8 +246,8 @@ steal Deque{..} = do
 
 -- | Locally pop the 'Deque'. This is not a thread safe operation, and should
 -- only be invoked on from the thread that \"owns\" the 'Deque'.
-pop :: Deque a -> IO (Maybe a)
-pop Deque{..} = do
+pop :: (PrimMonad m, PrimState m ~ RealWorld) => Deque a -> m (Maybe a)
+pop Deque{..} = primIO $ do
   b0  <- readCounter bottom
   arr <- readIORef array
   b   <- evaluate (b0-1)
