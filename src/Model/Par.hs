@@ -106,7 +106,7 @@ runPar_ (Par m) = do
   idlers <- newIORef []
   n <- getNumCapabilities
   d <- if n == 1 then do
-    putStrLn "1 capability"
+    -- putStrLn "1 capability"
     pool <- Deque.empty
     seed <- MWC.create
     karma <- newIORef 0
@@ -114,7 +114,7 @@ runPar_ (Par m) = do
     runFiber (m $ const schedule) Worker { ident=0, .. }
     readIORef karma
   else do
-    putStrLn $ show n ++ " capabilities"
+    -- putStrLn $ show n ++ " capabilities"
     tid <- myThreadId
     (k,_locked) <- threadCapability tid
     ws <- for [0..n-1] $ \ident -> do
@@ -138,8 +138,8 @@ runPar_ (Par m) = do
        forkOn (k + 1 + ident i) (runFiber schedule i) -- distribute the other workers to other capabilities mod n
     runFiber (m $ const schedule) lws                 -- process the last thing locally for now.
     foldlM (\x i -> do y <- readIORef (karma i); return $! x + y) 0 ws
-  print d
-  when (d < 0) $ throw BlockedIndefinitelyOnIVar
+  -- putStrLn $ "karma: " ++ show d
+  when (d < 0) $ throwIO BlockedIndefinitelyOnIVar
 
 runPar :: Par a -> IO a
 runPar m = do
