@@ -9,18 +9,20 @@ module Model.Par where
 
 import Control.Concurrent
 import Control.Exception
-import Control.Monad (join, when)
+import Control.Monad (when)
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Foldable
 import Data.Primitive.Array
 import Data.Traversable (for)
-import Model.Internal.Counted
 import Model.Internal.Deque as Deque
 import Model.Internal.Fiber
 import System.Random.MWC as MWC
 
+data BlockedIndefinitelyOnIVar = BlockedIndefinitelyOnIVar deriving (Show,Exception)
+
+-- newtype Par a = Par { unPar :: (a -> Fiber ()) -> (SomeException -> Fiber ()) -> Fiber () }
 newtype Par a = Par { unPar :: (a -> Fiber ()) -> Fiber () }
   deriving Functor
 
@@ -31,52 +33,10 @@ instance Applicative Par where
 instance Monad Par where
   return x = Par $ \k -> k x
   fail s = Par $ \_ -> fail s
-  Par m >>= k  = Par $ \ c -> m (\ x -> unPar (k x) c)
+  Par m >>= k = Par $ \ c -> m (\ x -> unPar (k x) c)
 
 instance MonadThrow Par where
   throwM e = Par $ \_ -> throwM e
-
--- | I need a simple form of IVar in order to implement MonadZip
-
-data BlockedIndefinitelyOnIVar = BlockedIndefinitelyOnIVar deriving (Show,Exception)
-
-data IVar a = IVar (IORef (Either a (Counted (a -> Fiber ()))))
-
--- How can we attach a finalizer that looks for stuck fibers?
-
-newIVar :: Par (IVar a)
-newIVar = io $ IVar <$> newIORef (Right [])
-
-readIVar :: IVar a -> Par a
-readIVar (IVar r) = Par $ \k -> join $ liftIO $ atomicModifyIORef' r $ \case
-  l@(Left a) -> (l, k a)
-  Right ks   -> (Right (k:+ks), addKarma (-1) >> schedule)
-
-writeIVar :: Eq a => IVar a -> a -> Par ()
-writeIVar (IVar r) a = Par $ \k -> join $ liftIO $ atomicModifyIORef' r $ \case
-  l@(Left b)
-    | a == b    -> (l, k ())
-    | otherwise -> (l, fail "writeIVar: mismatch")
-  Right ks      -> (Left a, do for_ ks (\k' -> spawn $ k' a); addKarma (length ks); k () )
-
-unsafeWriteIVar :: IVar a -> a -> Par ()
-unsafeWriteIVar (IVar r) a = Par $ \k  -> join $ liftIO $ atomicModifyIORef' r $ \case
-  l@Left{} -> (l, k ())
-  Right ks -> (Left a, do for_ ks (\k' -> spawn $ k' a); addKarma (length ks); k () )
-
-{- -- this is only sound for idempotent Par
-instance MonadZip Par where
-  mzipWith f m n = do
-    r <- newIVar
-    fork $ do
-      f <- m
-      unsafeWriteIVar f
-    a <- n
-    f <- readIVar r
-    return (f a)
-
-  munzip p = (fmap fst p, fmap snd p)
--}
 
 -- TODO: MonadZip for parallel monad comprehensions
 
