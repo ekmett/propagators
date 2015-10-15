@@ -38,6 +38,7 @@ library
     atomic-primops >= 0.7 && < 0.9,
     base >= 4.8 && < 5,
     contravariant,
+    exceptions,
     ghc-prim,
     mwc-random,
     primitive,

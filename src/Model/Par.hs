@@ -10,6 +10,7 @@ module Model.Par where
 import Control.Concurrent
 import Control.Exception
 import Control.Monad (join, when)
+import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Foldable
@@ -28,8 +29,12 @@ instance Applicative Par where
   Par f <*> Par v = Par $ \ c -> f $ \ g -> v (c . g)
 
 instance Monad Par where
-  return x = Par (\k -> k x)
+  return x = Par $ \k -> k x
+  fail s = Par $ \_ -> fail s
   Par m >>= k  = Par $ \ c -> m (\ x -> unPar (k x) c)
+
+instance MonadThrow Par where
+  throwM e = Par $ \_ -> throwM e
 
 -- | I need a simple form of IVar in order to implement MonadZip
 
@@ -41,20 +46,6 @@ data IVar a = IVar (IORef (Either a (Counted (a -> Fiber ()))))
 
 newIVar :: Par (IVar a)
 newIVar = io $ IVar <$> newIORef (Right [])
-{-
-newIVar = io $ do
-  r <- newIORef (Right [])
-  m <- newEmptyMVar 
-  w <- mkWeakIORef r $ do
-    w <- readMVar m 
-    deRefWeak w >>= \case
-      Nothing -> do putStrLn "finalizer: dead weak reference"; fail "died"
-      Just r' -> readIORef r' >>= \case
-        Right n | not (null n) -> do putStrLn "blocked"; throwIO BlockedIndefinitelyOnIVar
-        _                      -> return ()
-  putMVar m w
-  return (IVar r)
--}
 
 readIVar :: IVar a -> Par a
 readIVar (IVar r) = Par $ \k -> join $ liftIO $ atomicModifyIORef' r $ \case
@@ -100,35 +91,26 @@ io m = Par $ \k -> do
   a <- liftIO m
   k a
 
--- -- | Returns the net karma. If negative there remain blocked computations.
 runPar_ :: Par a -> IO ()
 runPar_ (Par m) = do
   idlers <- newIORef []
   n <- getNumCapabilities
   tid <- myThreadId
-  (k,_locked) <- threadCapability tid
+  (k,_) <- threadCapability tid
   ws <- for [0..n-1] $ \ident -> do
     pool <- Deque.empty
     seed <- MWC.create
     karma <- newIORef 0
-    workers <- newArray (n-1) $ error $ "PANIC! runPar_ missing worker in " ++ show ident
+    workers <- newArray (n-1) (error "PANIC! runPar_ missing worker")
     return Worker {..}
-  -- 01234
-  -- becomes
-  -- 0: 4123 iws[0]
-  -- 1: 0423 iws[1]
-  -- 2: 0143 iws[2]
-  -- 3: 0124 iws[3]
-  -- 4: 0123 lws
-  let iws = init ws
+  let iws = init ws -- this would be more efficient with head/tail
       lws = last ws
   forM_ ws $ \i -> forM_ iws $ \j -> writeArray (workers i) (ident j) j
   forM_ iws $ \i -> do
     writeArray (workers i) (ident i) lws
-    forkOn (k + 1 + ident i) (runFiber schedule i) -- distribute the other workers to other capabilities mod n
-  runFiber (m $ const schedule) lws                 -- process the last thing locally for now.
+    forkOn (k + 1 + ident i) (runFiber schedule i)
+  runFiber (m $ const schedule) lws
   d <- foldlM (\x i -> do y <- readIORef (karma i); return $! x + y) 0 ws
-  -- putStrLn $ "karma: " ++ show d
   when (d < 0) $ throwIO BlockedIndefinitelyOnIVar
 
 runPar :: Par a -> IO a

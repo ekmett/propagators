@@ -9,6 +9,7 @@ module Model.Internal.Fiber where
 
 import Control.Concurrent.MVar
 import Control.Monad (ap, join, when)
+import Control.Monad.Catch
 import Control.Monad.Primitive
 import Control.Monad.IO.Class
 import Data.Foldable
@@ -44,6 +45,20 @@ instance Monad Fiber where
     a <- m s
     runFiber (f a) s
   fail e = Fiber $ \ _ -> fail e
+
+instance MonadThrow Fiber where
+  throwM e = Fiber $ \_ -> throwM e
+
+instance MonadCatch Fiber where
+  catch (Fiber m) k = Fiber $ \s -> m s `catch` \e -> runFiber (k e) s
+
+instance MonadMask Fiber where
+  mask a = Fiber $ \e -> mask $ \u -> runFiber (a $ q u) e
+    where q :: (IO a -> IO a) -> Fiber a -> Fiber a
+          q u (Fiber b) = Fiber (u . b)
+  uninterruptibleMask a = Fiber $ \e -> uninterruptibleMask $ \u -> runFiber (a $ q u) e
+    where q :: (IO a -> IO a) -> Fiber a -> Fiber a
+          q u (Fiber b) = Fiber (u . b)
 
 instance MonadIO Fiber where
   liftIO m = Fiber $ \_ -> m
