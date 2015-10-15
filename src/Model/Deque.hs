@@ -28,7 +28,7 @@ module Model.Deque
   , null
   , size
   -- * Local Operations
-  , push, pushMany
+  , push, pushes
   , pop
   -- * Work-Stealing
   , steal
@@ -215,9 +215,9 @@ push obj Deque{..} = do
   return ()
 
 -- TODO: consolidate the writes behind one barrier!
-pushMany :: Foldable f => f a -> Deque a -> IO ()
-pushMany objs d = for_ (Reverse objs) $ \a -> push a d
-{-# INLINE pushMany #-}
+pushes :: Foldable f => f a -> Deque a -> IO ()
+pushes objs d = for_ (Reverse objs) $ \a -> push a d
+{-# INLINE pushes #-}
 
 -- | This is the work-stealing dequeue operation.
 --
