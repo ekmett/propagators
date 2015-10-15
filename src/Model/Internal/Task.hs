@@ -22,7 +22,7 @@ type Task = Worker -> IO ()
 data Worker = Worker
   { ident   :: {-# UNPACK #-} !Int
   , pool    :: !(Deque Task)
-  , workers :: !(MutableArray RealWorld Worker) -- other Workers. They will get shuffled as we schedule work stealing
+  , workers :: !(MutableArray RealWorld Worker) -- Other Workers. They will get shuffled as we schedule work stealing
   , idlers  :: !(IORef (Counted (MVar Task)))
   , seed    :: Gen RealWorld
   } 

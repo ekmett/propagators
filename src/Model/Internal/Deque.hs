@@ -45,6 +45,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector.Mutable as MV
 import Data.Vector.Mutable (MVector)
 import GHC.Prim (RealWorld)
+import Model.Internal.For
 import Prelude hiding (null)
 
 -- $setup
@@ -270,18 +271,6 @@ pop Deque{..} = do
       writeCounter bottom (t+1)
       return $! if b' then Just obj
                       else Nothing
-
--- * Utilities
-
--- My own forM for numeric ranges (not requiring deforestation optimizations).
--- Inclusive start, exclusive end.
-forN_ :: Monad m => Int -> Int -> (Int -> m ()) -> m ()
-forN_ start end _ | start > end = error "for_: start is greater than end"
-forN_ start end fn = loop start
-  where
-   loop !i | i == end  = return ()
-           | otherwise = do fn i; loop (i+1)
-{-# INLINE forN_ #-}
 
 -- * Circular array routines:
 
