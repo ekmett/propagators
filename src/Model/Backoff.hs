@@ -10,8 +10,8 @@ data Backoff = Backoff
   , totalWait :: {-# UNPACK #-} !Int
   }
 
-default :: Backoff
-default = Backoff 0 10000 0 -- 10ms
+defaultBackoff :: Backoff
+defaultBackoff = Backoff 0 10000 0 -- 10ms
 
 backoff :: Backoff -> IO Backoff
 backoff b@Backoff{..}
