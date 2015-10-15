@@ -67,7 +67,7 @@ idle s@Worker{..} = do
   m <- newEmptyMVar
   is <- atomicModifyIORef idlers $ \is -> (m :+ is,is)
   if length is == sizeofMutableArray workers
-  then for_ is $ \m -> putMVar m $ \_ -> return () -- shut it down. we're the last idler.
+  then for_ is $ \n -> putMVar n $ \_ -> return () -- shut it down. we're the last idler.
   else do
     t <- takeMVar m
     t s 
@@ -79,8 +79,8 @@ spawn t s@Worker{idlers,pool} = do
   push t pool
   when (not (Prelude.null xs)) $
     join $ atomicModifyIORef idlers $ \case
-       []    -> ([], return ())
        i:+is -> (is, putMVar i (referral s))
+       _     -> ([], return ())
 
 newtype Par a = Par { unPar :: (a -> Task) -> Task }
   deriving Functor
