@@ -27,6 +27,7 @@ data Worker = Worker
   , workers :: !(MutableArray RealWorld Worker) -- Other Workers. They will get shuffled as we schedule work stealing
   , idlers  :: !(IORef (Counted (MVar (Fiber ()))))
   , seed    :: Gen RealWorld
+  , karma   :: IORef Int
   }
 
 -- TODO: change workers to just contain an IO action that can do stealing. This prevents us from holding the entire other worker alive and makes a safer back-end.
@@ -102,3 +103,7 @@ spawn t = Fiber $ \ s@Worker{idlers,pool} -> do
     join $ atomicModifyIORef idlers $ \case
        i:+is -> (is, putMVar i (referral s))
        _     -> ([], return ())
+
+-- | If the computation ends and we have globally accumulated negative karma then somebody, somewhere, is blocked.
+addKarma :: Int -> Fiber ()
+addKarma k = Fiber $ \ Worker{karma} -> modifyIORef' karma (k+)
