@@ -4,7 +4,7 @@
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE Unsafe #-}
 
-module Model.PrimRef
+module Model.Internal.PrimRef
   ( 
   -- * Primitive References
     PrimRef(..)

@@ -50,10 +50,10 @@ library
     Model.Internal.Counted
     Model.Internal.Deque
     Model.Internal.Fiber
+    Model.Internal.PrimRef
     Model.Internal.Util
     Model.Internal.Weak
     Model.IVar
-    Model.PrimRef
     Model.Observer
     Model.Par
     Model.Subscription

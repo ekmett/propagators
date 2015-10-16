@@ -1,5 +1,9 @@
-{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
+#ifndef HLINT
+{-# LANGUAGE ViewPatterns #-}
+#endif
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE DeriveTraversable #-}
 module Model.Internal.Counted where
 

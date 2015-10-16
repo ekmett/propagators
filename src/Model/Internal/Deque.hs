@@ -1,8 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fobject-code #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2012-15 Edward Kmett, Ryan Newton
