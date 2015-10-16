@@ -50,6 +50,7 @@ library
     Model.Internal.Counted
     Model.Internal.Deque
     Model.Internal.Fiber
+    Model.Internal.Hole
     Model.Internal.PrimRef
     Model.Internal.Util
     Model.IVar
@@ -57,6 +58,7 @@ library
     Model.Par
     Model.Subscription
 
+  c-sources: cbits/holes.cmm
   ghc-options: -Wall -fwarn-tabs
 
   hs-source-dirs: src

@@ -1,0 +1,35 @@
+#include <Cmm.h>
+
+#define SIZEOF_StgInd (SIZEOF_StgHeader + WDS(1))
+
+INFO_TABLE(stg_HOLE,0,1,PRIM,"HOLE","HOLE")
+{ foreign "C" barf("HOLE object entered!") never returns; }
+
+newHolezh (gcptr unused) {
+  gcptr p;
+  ALLOC_PRIM_(SIZEOF_StgInd, newHolezh)
+  p = Hp - SIZEOF_StgInd + WDS(1);
+  SET_HDR(p, stg_HOLE_info, CCCS);
+  // we don't care what junk ends up in the value
+  return (p);
+}
+
+setHolezh (gcptr p1, gcptr p2) {
+  // Based on updateWithIndirection(ptr,val,return ())
+  W_ bd;
+  
+  OVERWRITING_CLOSURE(p1);
+  StgInd_indirectee(p1) = p2;
+  prim_write_barrier;
+  SET_INFO(p1, stg_IND_info);
+  LDV_RECORD_CREATE(p1);
+  bd = Bdescr(p1);
+  if (bdescr_gen_no(bd) != 0 :: bits16) {
+    recordMutableCap(p1, TO_W_(bdescr_gen_no(bd)));
+    TICK_UPD_OLD_IND();
+    return ();
+  } else {
+    TICK_UPD_NEW_IND();
+    return ();
+  }
+}
