@@ -41,7 +41,7 @@ instance MonadThrow Par where
 
 fork :: Par a -> Par ()
 fork (Par m) = Par $ \k -> do
-  spawn (k ())
+  defer (k ())
   m (const schedule)
 
 -- | embed an IO action. (This is rather unsafe)

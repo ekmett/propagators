@@ -115,8 +115,8 @@ idle = Fiber $ \s@Worker{..} -> do
     runFiber t s
 
 -- | Spawn a background task. We first put it into our job queue, and then we wake up an idler if there are any and have them try to steal it.
-spawn :: Fiber () -> Fiber ()
-spawn t = Fiber $ \ s@Worker{idlers,pool} -> do
+defer :: Fiber () -> Fiber ()
+defer t = Fiber $ \ s@Worker{idlers,pool} -> do
   xs <- readIORef idlers
   push t pool
   unless (Prelude.null xs) $

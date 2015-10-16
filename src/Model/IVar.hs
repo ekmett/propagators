@@ -32,12 +32,12 @@ writeIVar (IVar r) a = Par $ \k -> join $ liftIO $ atomicModifyIORef' r $ \case
   l@(Left b)
     | a == b    -> (l, k ())
     | otherwise -> (l, fail "writeIVar: mismatch")
-  Right ks      -> (Left a, do for_ ks (\k' -> spawn $ k' a); addKarma (length ks); k () )
+  Right ks      -> (Left a, do for_ ks (\k' -> defer $ k' a); addKarma (length ks); k () )
 
 unsafeWriteIVar :: IVar a -> a -> Par ()
 unsafeWriteIVar (IVar r) a = Par $ \k  -> join $ liftIO $ atomicModifyIORef' r $ \case
   l@Left{} -> (l, k ())
-  Right ks -> (Left a, do for_ ks (\k' -> spawn $ k' a); addKarma (length ks); k () )
+  Right ks -> (Left a, do for_ ks (\k' -> defer $ k' a); addKarma (length ks); k () )
 
 {- -- this is only sound for idempotent Par, but we could use it for a propagator monad
 instance MonadZip Par where
