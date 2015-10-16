@@ -1,9 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE DeriveFunctor #-}
 module Model.IVar where
 
 import Control.Monad (join)
@@ -13,6 +10,11 @@ import Data.Foldable
 import Model.Internal.Counted
 import Model.Internal.Fiber
 import Model.Par
+
+#ifdef HLINT
+{-# ANN module "HLint: ignore Reduce duplication" #-}
+#endif
+
 
 data IVar a = IVar (IORef (Either a (Counted (a -> Fiber ()))))
 

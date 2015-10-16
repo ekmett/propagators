@@ -1,5 +1,4 @@
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveTraversable #-}
 module Model.Internal.Counted where
@@ -12,12 +11,19 @@ import Data.Foldable
 import GHC.Exts as Exts
 import Prelude
 
+#ifdef HLINT
+{-# ANN module "HLint: ignore Eta reduce" #-}
+#endif
+
+
 -- | A simple list with a baked in memoization of the length
 data Counted a = Counted {-# UNPACK #-} !Int [a] deriving (Functor,Traversable,Eq,Ord,Read,Show)
 
+#ifndef HLINT
 pattern (:+) :: () => () => a -> Counted a -> Counted a
 pattern a :+ as <- Counted (subtract 1 -> i) (a : (Counted i -> as)) where
   a :+ Counted i as = Counted (i+1) (a:as)
+#endif
 
 instance Foldable Counted where
   foldMap f (Counted _ xs) = foldMap f xs

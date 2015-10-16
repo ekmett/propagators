@@ -50,6 +50,11 @@ import Model.Internal.Util
 import GHC.Prim
 import GHC.Types (Int(I#))
 
+#ifdef HLINT
+{-# ANN module "HLint: ignore Eta reduce" #-}
+{-# ANN module "HLint: ignore Reduce duplication" #-}
+#endif
+
 --------------------------------------------------------------------------------
 -- * Primitive References
 --------------------------------------------------------------------------------

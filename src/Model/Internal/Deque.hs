@@ -1,5 +1,4 @@
 {-# LANGUAGE MagicHash #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -47,6 +46,11 @@ import qualified Data.Vector.Mutable as MV
 import Data.Vector.Mutable (MVector)
 import Model.Internal.Util
 import Prelude hiding (null)
+
+#ifdef HLINT
+{-# ANN module "HLint: ignore Eta reduce" #-}
+{-# ANN module "HLint: ignore Reduce duplication" #-}
+#endif
 
 -- $setup
 -- >>> :set -XScopedTypeVariables -XNoOverloadedStrings
@@ -259,14 +263,15 @@ pop Deque{..} = primIO $ do
   tt   <- readCounterForCAS top
   let t = peekCTicket tt
       sz = b - t
-  if sz < 0 then do
+  if sz < 0
+  then do
     writeCounter bottom t
     return Nothing
-   else do
+  else do
     obj <- getCirc arr b
-    if sz > 0 then do
-      return (Just obj)
-     else do
+    if sz > 0
+    then return (Just obj)
+    else do
       (b',_) <- casCounter top tt (t+1)
       writeCounter bottom (t+1)
       return $! if b' then Just obj

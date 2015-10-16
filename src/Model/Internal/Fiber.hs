@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
@@ -8,7 +7,7 @@
 module Model.Internal.Fiber where
 
 import Control.Concurrent.MVar
-import Control.Monad (ap, join, when)
+import Control.Monad (ap, join, unless)
 import Control.Monad.Catch
 import Control.Monad.Primitive
 import Control.Monad.IO.Class
@@ -61,7 +60,7 @@ instance MonadMask Fiber where
           q u (Fiber b) = Fiber (u . b)
 
 instance MonadIO Fiber where
-  liftIO m = Fiber $ \_ -> m
+  liftIO m = Fiber (const m)
 
 instance PrimMonad Fiber where
   type PrimState Fiber = RealWorld
@@ -114,7 +113,7 @@ spawn :: Fiber () -> Fiber ()
 spawn t = Fiber $ \ s@Worker{idlers,pool} -> do
   xs <- readIORef idlers
   push t pool
-  when (not (Prelude.null xs)) $
+  unless (Prelude.null xs) $
     join $ atomicModifyIORef idlers $ \case
        i:+is -> (is, putMVar i (referral s))
        _     -> ([], return ())
