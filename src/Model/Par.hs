@@ -61,6 +61,7 @@ runPar_ (Par m) = do
     seed <- MWC.create
     karma <- newIORef 0
     workers <- newArray (n-1) (error "PANIC! runPar_ missing worker")
+    fast <- newIORef True
     return Worker {..}
   let iws = init ws -- this would be more efficient with head/tail
       lws = last ws

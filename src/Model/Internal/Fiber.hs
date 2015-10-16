@@ -28,6 +28,7 @@ data Worker = Worker
   , idlers  :: {-# UNPACK #-} !(IORef (Counted (MVar (Fiber ()))))
   , seed    :: !(Gen RealWorld)
   , karma   :: {-# UNPACK #-} !(IORef Int)
+  , fast    :: {-# UNPACK #-} !(IORef Bool)
   }
 
 -- TODO: change workers to just contain an IO action that can do stealing. This prevents us from holding the entire other worker alive and makes a safer back-end.
@@ -69,20 +70,20 @@ instance PrimMonad Fiber where
 -- | Look for something to do locally, otherwise go look for work
 schedule :: Fiber ()
 schedule = Fiber $ \ s@Worker{..} -> pop pool >>= \case
-  Just t -> runFiber t s
+  Just t -> do
+    writeIORef fast True
+    runFiber t s
   Nothing
-    | n == 0    -> return ()
-    | otherwise -> runFiber (interview (n-1)) s
+    | n > 0 -> do
+      writeIORef fast False
+      runFiber (interview (n-1)) s
+    | otherwise -> return ()
     where n = sizeofMutableArray workers
 
 -- | Go door to door randomly looking for work. Requires there to be at least one door to knock on.
 interview :: Int -> Fiber ()
 interview i
-  | i == 0 = Fiber $ \s@Worker{workers} -> do
-    b <- readArray workers 0
-    m <- steal (pool b)
-    runFiber (fromMaybe idle m) s
-  | otherwise = Fiber $ \ s@Worker{workers, seed} -> do
+  | i > 0 = Fiber $ \ s@Worker{workers, seed} -> do
     j <- uniformR (0,i) seed -- perform an on-line Knuth shuffle step
     a <- readArray workers i
     b <- readArray workers j
@@ -90,6 +91,10 @@ interview i
     writeArray workers j a
     m <- steal (pool b)
     runFiber (fromMaybe (interview (i-1)) m) s
+  | otherwise = Fiber $ \s@Worker{workers} -> do
+    b <- readArray workers 0
+    m <- steal (pool b)
+    runFiber (fromMaybe idle m) s
 
 -- | We have a hot tip from somebody with a job opening!
 referral :: Worker -> Fiber ()
@@ -103,9 +108,10 @@ idle = Fiber $ \s@Worker{..} -> do
   m <- newEmptyMVar
   is <- atomicModifyIORef idlers $ \is -> (m :+ is,is)
   if length is == sizeofMutableArray workers
-  then for_ is $ \n -> putMVar n $ pure () -- shut it down. we're the last idler.
+  then for_ is $ \i -> putMVar i $ pure () -- shut it down. we're the last idler.
   else do
-    t <- takeMVar m
+    t <- takeMVar m -- We were given this, we didn't steal it. Really!
+    writeIORef fast True
     runFiber t s
 
 -- | Spawn a background task. We first put it into our job queue, and then we wake up an idler if there are any and have them try to steal it.
@@ -115,7 +121,7 @@ spawn t = Fiber $ \ s@Worker{idlers,pool} -> do
   push t pool
   unless (Prelude.null xs) $
     join $ atomicModifyIORef idlers $ \case
-       i:+is -> (is, putMVar i (referral s))
+       i:+is -> (is, putMVar i $ referral s)
        _     -> ([], return ())
 
 -- | If the computation ends and we have globally accumulated negative karma then somebody, somewhere, is blocked.
