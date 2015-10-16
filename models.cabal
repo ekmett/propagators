@@ -51,6 +51,7 @@ library
     Model.Internal.Deque
     Model.Internal.Fiber
     Model.Internal.Util
+    Model.Internal.Weak
     Model.IVar
     Model.PrimRef
     Model.Observer
