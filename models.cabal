@@ -52,7 +52,6 @@ library
     Model.Internal.Fiber
     Model.Internal.PrimRef
     Model.Internal.Util
-    Model.Internal.Weak
     Model.IVar
     Model.Observer
     Model.Par
