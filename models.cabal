@@ -55,11 +55,11 @@ library
     Model.Internal.Log
     Model.Internal.PrimRef
     Model.Internal.Util
-    Model.IVar
     Model.Log
-    Model.Observer
     Model.Par
-    Model.Subscription
+    Model.Par.IVar
+    Model.Par.Observer
+    Model.Par.Subscription
 
   c-sources: cbits/holes.cmm
   ghc-options: -Wall -fwarn-tabs
