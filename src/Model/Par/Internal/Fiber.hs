@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveFunctor #-}
-module Model.Internal.Fiber where
+module Model.Par.Internal.Fiber where
 
 import Control.Concurrent.MVar
 import Control.Monad (ap, join, unless)
@@ -16,8 +16,8 @@ import Data.IORef
 import Data.Maybe
 import Data.Primitive.Array
 import Model.Internal.Counted
-import Model.Internal.Deque as Deque
 import Model.Internal.Util
+import Model.Par.Internal.Deque as Deque
 import System.Random.MWC
 
 -- internal state of a Worker

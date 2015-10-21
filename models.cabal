@@ -49,17 +49,18 @@ library
   exposed-modules:
     Model.Internal.Backoff
     Model.Internal.Counted
-    Model.Internal.Deque
-    Model.Internal.Fiber
     Model.Internal.Hole
     Model.Internal.Log
     Model.Internal.PrimRef
     Model.Internal.Util
     Model.Log
     Model.Par
+    Model.Par.Internal.Deque
+    Model.Par.Internal.Fiber
     Model.Par.IVar
     Model.Par.Observer
     Model.Par.Subscription
+    Model.Simple.IVar
 
   c-sources: cbits/holes.cmm
   ghc-options: -Wall -fwarn-tabs

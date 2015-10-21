@@ -15,11 +15,10 @@ import Data.IORef
 import Data.Foldable
 import Data.Primitive.Array
 import Data.Traversable (for)
-import Model.Internal.Deque as Deque
-import Model.Internal.Fiber
+import Model.Exception
+import Model.Par.Internal.Deque as Deque
+import Model.Par.Internal.Fiber
 import System.Random.MWC as MWC
-
-data BlockedIndefinitelyOnIVar = BlockedIndefinitelyOnIVar deriving (Show,Exception)
 
 -- newtype Par a = Par { unPar :: (a -> Fiber ()) -> (SomeException -> Fiber ()) -> Fiber () }
 newtype Par a = Par { unPar :: (a -> Fiber ()) -> Fiber () }
