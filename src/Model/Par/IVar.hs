@@ -4,10 +4,12 @@
 {-# LANGUAGE OverloadedLists #-}
 module Model.Par.IVar where
 
+import Control.Exception
 import Control.Monad (join)
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Foldable
+import Model.Exception
 import Model.Internal.Counted
 import Model.Par
 import Model.Par.Internal.Fiber
@@ -15,7 +17,6 @@ import Model.Par.Internal.Fiber
 #ifdef HLINT
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 #endif
-
 
 data IVar a = IVar (IORef (Either a (Counted (a -> Fiber ()))))
 
@@ -31,7 +32,7 @@ writeIVar :: Eq a => IVar a -> a -> Par ()
 writeIVar (IVar r) a = Par $ \k -> join $ liftIO $ atomicModifyIORef' r $ \case
   l@(Left b)
     | a == b    -> (l, k ())
-    | otherwise -> (l, fail "writeIVar: mismatch")
+    | otherwise -> (l, liftIO $ throwIO Contradiction)
   Right ks      -> (Left a, do for_ ks (\k' -> defer $ k' a); addKarma (length ks); k () )
 
 unsafeWriteIVar :: IVar a -> a -> Par ()

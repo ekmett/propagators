@@ -21,7 +21,7 @@ writeIVar (IVar m _) a = do
   t <- tryPutMVar m a
   unless t $ do
      b <- readMVar m
-     unless (a == b) $ throw Contradiction
+     unless (a == b) $ throwIO Contradiction
 
 unsafeWriteIVar :: IVar a -> a -> IO ()
 unsafeWriteIVar (IVar m _) a = () <$ tryPutMVar m a
