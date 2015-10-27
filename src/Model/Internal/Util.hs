@@ -2,10 +2,14 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE UnliftedFFITypes #-}
 module Model.Internal.Util where
 
 import Control.Monad.Primitive
 import Data.Primitive
+import Foreign.C.Types
+import GHC.Conc.Sync
 import GHC.Exts
 
 -- My own forM for numeric ranges (not requiring deforestation optimizations).
@@ -21,6 +25,12 @@ forN_ start end fn = loop start
 primIO :: (PrimMonad m, PrimState m ~ RealWorld) => IO a -> m a
 primIO = primToPrim
 {-# INLINE primIO #-}
+
+foreign import ccall unsafe "rts_getThreadId" rts_getThreadId :: ThreadId# -> CInt
+
+rawThreadId :: ThreadId -> CInt
+rawThreadId (ThreadId x) = rts_getThreadId x
+{-# INLINE rawThreadId #-}
 
 --------------------------------------------------------------------------------
 -- * Array Primitives

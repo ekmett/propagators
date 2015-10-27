@@ -41,6 +41,7 @@ library
     exceptions,
     fingertree,
     ghc-prim,
+    hashable,
     mwc-random,
     primitive,
     transformers >= 0.4 && < 0.5,
