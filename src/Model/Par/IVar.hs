@@ -4,8 +4,8 @@
 {-# LANGUAGE OverloadedLists #-}
 module Model.Par.IVar where
 
-import Control.Exception
 import Control.Monad (join)
+import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Foldable
@@ -32,7 +32,7 @@ writeIVar :: Eq a => IVar a -> a -> Par ()
 writeIVar (IVar r) a = Par $ \k -> mask_ $ join $ liftIO $ atomicModifyIORef' r $ \case
   l@(Left b)
     | a == b    -> (l, k ())
-    | otherwise -> (l, liftIO $ throwIO Contradiction)
+    | otherwise -> (l, liftIO $ throwM Contradiction)
   Right ks      -> (Left a, do for_ ks (\k' -> defer $ k' a); addKarma (length ks); k () )
 
 unsafeWriteIVar :: IVar a -> a -> Par ()
