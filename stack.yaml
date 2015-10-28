@@ -1,1 +1,2 @@
 resolver: nightly-2015-09-20
+extra-deps: [unique-0]
