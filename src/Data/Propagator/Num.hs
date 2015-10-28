@@ -39,31 +39,44 @@ class Propagated a => PropagatedNum a where
 instance PropagatedNum Integer where
   ctimes x y z = do
     lift2 (*) x y z
-    watch z $ \c -> if c == 0
-      then watch x $ \ a -> when (a /= 0) $ write y 0
-      else watch y $ \ b -> when (b /= 0) $ write x 0
+    watch z $ \c ->
+      if c == 0 then do
+        watch x $ \ a -> when (a /= 0) $ write y 0
+        watch y $ \ b -> when (b /= 0) $ write x 0
+      else do
+        watch x $ \ a -> write y (c `div` a)
+        watch y $ \ b -> write x (c `div` b)
+       
+      
+      -- propagate backwards with div?
 
 instance PropagatedNum (Supported Integer) where
   ctimes x y z = do
     lift2 (*) x y z
-    watch z $ \c -> if c == 0
-      then watch x $ \ a -> when (a /= 0) $ write y 0
-      else watch y $ \ b -> when (b /= 0) $ write x 0
+    watch z $ \c -> 
+      when (c == 0) $ do
+        watch x $ \ a -> when (a /= 0) $ write y 0
+        watch y $ \ b -> when (b /= 0) $ write x 0
 
 instance PropagatedNum Natural where
   ctimes x y z = do
     lift2 (*) x y z
-    watch z $ \c -> if c == 0
-      then watch x $ \ a -> when (a /= 0) $ write y 0
-      else watch y $ \ b -> when (b /= 0) $ write x 0
+    watch z $ \c ->
+      if c == 0 then do
+        watch x $ \ a -> when (a /= 0) $ write y 0
+        watch y $ \ b -> when (b /= 0) $ write x 0
+      else do
+        watch x $ \ a -> write y (c `div` a)
+        watch y $ \ b -> write x (c `div` b)
   cabs = unify
 
 instance PropagatedNum (Supported Natural) where
   ctimes x y z = do
     lift2 (*) x y z
-    watch z $ \c -> if c == 0
-      then watch x $ \ a -> when (a /= 0) $ write y 0
-      else watch y $ \ b -> when (b /= 0) $ write x 0
+    watch z $ \c ->
+      when (c == 0) $ do
+        watch x $ \ a -> when (a /= 0) $ write y 0
+        watch y $ \ b -> when (b /= 0) $ write x 0
   cabs = unify
 
 instance PropagatedNum Int
