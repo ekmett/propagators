@@ -162,7 +162,7 @@ class PropagatedNum a => PropagatedFloating a where
       write x (atan b)
 
   csinh :: Cell s a -> Cell s a -> ST s ()
-  default csinh :: (Floating a, Ord a) => Cell s a -> Cell s a -> ST s ()
+  default csinh :: Floating a => Cell s a -> Cell s a -> ST s ()
   csinh x y = do
     lift1 sinh x y
     lift1 asinh y x

@@ -105,7 +105,7 @@ instance (Propagated a, Propagated b) => Propagated (Either a b) where
   merge _ _ = fail "Left /= Right"
 
 -- | Propagated interval arithmetic
-instance (Num a, Ord a) => Propagated (Interval a) where
+instance Ord a => Propagated (Interval a) where
   merge (I a b) (I c d)
     | b < c || d < a = Change True Empty
     | otherwise      = Change (a < c || b > d) $ I (max a c) (min b d)

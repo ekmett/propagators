@@ -84,6 +84,6 @@ watch2 x y f = do
 lift1 :: (a -> b) -> Cell s a -> Cell s b -> ST s ()
 lift1 f x y = watch x $ \a -> write y (f a)
 
--- | Lift a binary function into a relationship between two cells.
+-- | Lift a binary function into a relationship between three cells.
 lift2 :: (a -> b -> c) -> Cell s a -> Cell s b -> Cell s c -> ST s ()
 lift2 f x y z = watch2 x y $ \a b -> write z (f a b)

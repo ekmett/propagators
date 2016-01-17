@@ -170,7 +170,7 @@ lower2 f a b = lower (f (arg a) (arg b))
 --
 -- >>> forwards (\c -> c * 9/5 + 32) 100
 -- Just 212.0
-forwards :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> a -> Maybe b
+forwards :: Propagated a => (forall s. Prop s a -> Prop s b) -> a -> Maybe b
 forwards f a = runST $ do
   x <- cell
   y <- lower1 f x
@@ -181,7 +181,7 @@ forwards f a = runST $ do
 --
 -- >>> backwards (\c -> c * 9/5 + 32) 212
 -- Just 100.0
-backwards :: (Propagated a, Propagated b) => (forall s. Prop s a -> Prop s b) -> b -> Maybe a
+backwards :: Propagated a => (forall s. Prop s a -> Prop s b) -> b -> Maybe a
 backwards f b = runST $ do
   x <- cell
   y <- lower1 f x
