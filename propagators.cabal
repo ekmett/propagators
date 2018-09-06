@@ -57,34 +57,3 @@ library
 
   hs-source-dirs: src
   default-language: Haskell2010
-
-test-suite doctests
-  type:           exitcode-stdio-1.0
-  main-is:        doctests.hs
-  ghc-options:    -Wall -threaded
-  hs-source-dirs: tests
-  default-language: Haskell2010
-
-  if !flag(test-doctests)
-    buildable: False
-  else
-    build-depends:
-      base      >= 4.8,
-      directory >= 1.0,
-      doctest   >= 0.9.1,
-      filepath,
-      parallel
-
-test-suite hlint
-  type: exitcode-stdio-1.0
-  main-is: hlint.hs
-  ghc-options: -w -threaded -rtsopts -with-rtsopts=-N
-  hs-source-dirs: tests
-  default-language: Haskell2010
-
-  if !flag(test-hlint)
-    buildable: False
-  else
-    build-depends:
-      base,
-      hlint >= 1.7
