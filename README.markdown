@@ -5,7 +5,7 @@ propagators
 
 Propagators propagate increases in information from cell to cell.
 
-They are described (using Scheme) in Alexey Radul and Gerald Sussman's ["The Art of the Propagator"](http://web.mit.edu/~axch/www/art.pdf) as well as in Alexey Radul's thesis on [Propagation Networks](http://web.mit.edu/~axch/www/phd-thesis.pdf).
+They are described (using Scheme) in Alexey Radul and Gerald Sussman's ["The Art of the Propagator"](http://web.mit.edu/~axch/www/art.pdf) as well as in Alexey Radul's thesis on [Propagation Networks](http://groups.csail.mit.edu/genesis/papers/radul%202009.pdf).
 
 This package explores design options for propagators in Haskell. The primary innovation here (beyond the published work) is the use of observable sharing to let us take a more direct form of programming and transform it back and forth to the propagator style.
 
