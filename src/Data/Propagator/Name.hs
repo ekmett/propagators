@@ -20,6 +20,7 @@ import Data.Hashable
 import Data.String
 import GHC.Prim
 import System.Mem.StableName
+import GHC.Exts(Any)
 
 data Name
   = U {-# UNPACK #-} !Unique

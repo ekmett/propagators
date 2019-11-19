@@ -16,3 +16,4 @@ old
 .cabal-sandbox/
 cabal.sandbox.config
 codex.tags
+.stack-work

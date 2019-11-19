@@ -1,2 +1,2 @@
-resolver: nightly-2015-09-20
+resolver: lts-12.9
 extra-deps: [unique-0]
