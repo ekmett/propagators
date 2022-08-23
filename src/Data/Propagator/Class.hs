@@ -4,11 +4,14 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DerivingVia #-}
 
 module Data.Propagator.Class
   ( Change(..)
   , Propagated(..)
   , mergeDefault
+  , MergeUsingSemigroup(..)
   ) where
 
 import Control.Applicative
@@ -17,6 +20,7 @@ import Data.HashSet
 import Data.Propagator.Name
 import Numeric.Interval.Internal (Interval(..))
 import Numeric.Natural
+import Data.Monoid
 
 -- | This represents the sorts of changes we can make as we accumulate information
 -- in a 'Data.Propagator.Cell.Cell'.
@@ -49,6 +53,8 @@ instance Monad Change where
     Change n b -> Change (m || n) b
     Contradiction s n -> Contradiction s n
   Contradiction s n >>= _ = Contradiction s n
+
+instance MonadFail Change where
   fail = Contradiction mempty
 
 instance MonadPlus Change where
@@ -111,3 +117,12 @@ instance (Num a, Ord a) => Propagated (Interval a) where
     | otherwise      = Change (a < c || b > d) $ I (max a c) (min b d)
   merge Empty _ = Change False Empty
   merge _ Empty = Change True Empty
+
+
+newtype MergeUsingSemigroup a = MergeUsingSemigroup a
+instance (Eq a, Semigroup a) => Propagated (MergeUsingSemigroup a) where
+    merge (MergeUsingSemigroup a) (MergeUsingSemigroup b) = Change (a /= c) (MergeUsingSemigroup c)
+      where c = a <> b
+
+deriving via MergeUsingSemigroup Any instance Propagated Any
+deriving via MergeUsingSemigroup All instance Propagated All
