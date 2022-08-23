@@ -56,31 +56,32 @@ defineBinary f p1 p2 = unsafePerformIO $ do
 --   defineNary :: Propagated c => ([a] -> c) -> [PProp a] -> PProp c
 -- if we add a liftN in Cell.hs
 
-getPProp :: PProp a -> Maybe a
+getPProp :: PProp a -> a
 getPProp (PProp c t) = unsafePerformIO $ do
     force t
-    stToIO $ content c
+    m <- stToIO $ content c
+    case m of
+        Nothing -> error "Empty cell in PProp"
+        Just x -> pure x
 
 
 -- A little demo with the two point lattice True < False
 
--- This is a bit off, because we are not really using the fact that an empty
--- cell corresponds to a cell with bottom (value True), hence we have to handle that in getPProp
 
-newtype PAll = PAll (PProp All)
+type PAll = PProp All
 pTrue :: PAll
-pTrue = PAll (defineConst (All True))
+pTrue = defineConst (All True)
 pFalse :: PAll
-pFalse = PAll (defineConst (All False))
+pFalse = defineConst (All False)
 
 (&&&) :: PAll -> PAll -> PAll
-PAll p1 &&& PAll p2 = PAll (defineBinary (coerce (&&)) p1 p2)
+(&&&) = defineBinary (coerce (&&))
 
 pand :: [PAll] -> PAll
 pand = foldr (&&&) pTrue
 
 getPAll :: PAll -> Bool
-getPAll (PAll p) = maybe True getAll (getPProp p)
+getPAll = getAll . getPProp
 
 examples :: [Bool]
 examples =
